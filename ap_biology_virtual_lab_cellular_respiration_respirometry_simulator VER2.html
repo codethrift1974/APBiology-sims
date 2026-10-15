@@ -1,0 +1,1984 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AP Biology Virtual Lab: Cellular Respiration & Respirometry Simulator</title>
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background-color: #f8fafc;
+      color: #0f172a;
+    }
+    .mono {
+      font-family: 'JetBrains Mono', monospace;
+    }
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #f1f5f9;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: #cbd5e1;
+      border-radius: 4px;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: #94a3b8;
+    }
+    @keyframes bubbleFloat {
+      0% { transform: translateY(0px); opacity: 0.75; }
+      50% { transform: translateY(-4px); opacity: 1; }
+      100% { transform: translateY(0px); opacity: 0.75; }
+    }
+    .ice-float {
+      animation: bubbleFloat 3.2s ease-in-out infinite;
+    }
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      .print-only {
+        display: block !important;
+      }
+      body {
+        background: white;
+      }
+    }
+  </style>
+</head>
+<body class="min-h-screen flex flex-col bg-slate-50 text-slate-900">
+
+  <!-- Top Header & Global Lab Bar -->
+  <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-30 shadow-md no-print">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <div class="w-10 h-10 rounded-xl bg-emerald-500/20 border border-emerald-400/40 flex items-center justify-center text-emerald-300 font-bold text-lg shadow-inner">
+          O₂
+        </div>
+        <div>
+          <div class="flex items-center gap-2">
+            <span class="text-xs font-semibold uppercase tracking-wider px-2 py-0.5 rounded bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">AP Biology • Big Idea 2</span>
+            <span class="text-xs text-slate-400 hidden sm:inline">LO 2.1, 2.2, 2.24 • SP 2, 5, 6</span>
+          </div>
+          <h1 class="text-base sm:text-lg font-bold tracking-tight text-white">Cellular Respiration Virtual Respirometry Lab</h1>
+        </div>
+      </div>
+
+      <!-- Lab Group / Trial Selector & Quick Actions -->
+      <div class="flex flex-wrap items-center gap-2 sm:gap-3">
+        <div class="flex items-center bg-slate-800 rounded-lg border border-slate-700 px-2.5 py-1.5 text-xs">
+          <label for="groupSelect" class="text-slate-400 mr-2 font-medium">Lab Group Dataset:</label>
+          <select id="groupSelect" class="bg-transparent text-emerald-300 font-semibold focus:outline-none cursor-pointer">
+            <option value="1">Group 1 (25.0°C / 10.0°C - Trial A)</option>
+            <option value="2">Group 2 (24.5°C / 10.0°C - Trial B)</option>
+            <option value="3">Group 3 (25.2°C / 9.8°C - Trial C)</option>
+            <option value="4">Group 4 (24.8°C / 10.2°C - Trial D)</option>
+            <option value="5">Group 5 (25.5°C / 10.0°C - Trial E)</option>
+            <option value="6">Group 6 (24.2°C / 9.5°C - Trial F)</option>
+            <option value="7">Group 7 (25.0°C / 10.5°C - Trial G)</option>
+            <option value="8">Group 8 (24.6°C / 10.0°C - Trial H)</option>
+          </select>
+        </div>
+
+        <button id="btnRandomizeGroup" type="button" class="px-3 py-1.5 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 text-xs font-medium transition flex items-center gap-1.5" title="Generate a fresh biological dataset for a new student trial">
+          <span>🎲</span> New Trial Data
+        </button>
+
+        <button id="btnExportCSV" type="button" class="px-3 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold transition flex items-center gap-1.5 shadow-sm">
+          <span>📥</span> Export CSV
+        </button>
+
+        <button id="btnPrintReport" type="button" class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition flex items-center gap-1.5 shadow-sm">
+          <span>🖨️</span> Print / Save PDF
+        </button>
+      </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <div class="bg-slate-800/90 border-t border-slate-700/80">
+      <div class="max-w-7xl mx-auto px-4 flex overflow-x-auto no-scrollbar gap-1 sm:gap-2 py-1.5" role="tablist">
+        <button type="button" data-tab="tab-overview" class="nav-tab-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition bg-emerald-600 text-white shadow-sm">
+          1. Background &amp; PV=nRT
+        </button>
+        <button type="button" data-tab="tab-day1" class="nav-tab-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition text-slate-300 hover:text-white hover:bg-slate-700/60">
+          2. Day 1: Volume &amp; Assembly
+        </button>
+        <button type="button" data-tab="tab-day2" class="nav-tab-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition text-slate-300 hover:text-white hover:bg-slate-700/60">
+          3. Day 2: Respirometer Bath Lab
+        </button>
+        <button type="button" data-tab="tab-data" class="nav-tab-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition text-slate-300 hover:text-white hover:bg-slate-700/60">
+          4. Data Tables &amp; Graphing
+        </button>
+        <button type="button" data-tab="tab-extension" class="nav-tab-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition text-slate-300 hover:text-white hover:bg-slate-700/60">
+          5. Extensions &amp; Post-Lab Qs
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- Toast Notification Banner -->
+  <div id="toastBanner" class="fixed bottom-5 right-5 z-50 hidden max-w-sm bg-slate-900 text-white px-4 py-3 rounded-xl shadow-xl border border-slate-700 flex items-center gap-3 transition-all no-print">
+    <span id="toastIcon" class="text-lg">✅</span>
+    <p id="toastText" class="text-xs sm:text-sm font-medium leading-snug"></p>
+  </div>
+
+  <!-- Main Workspace Container -->
+  <main class="flex-1 max-w-7xl w-full mx-auto px-4 py-6 space-y-6">
+
+    <!-- ==========================================
+         TAB 1: OVERVIEW, BACKGROUND & PV = nRT
+         ========================================== -->
+    <section id="tab-overview" class="tab-panel space-y-6">
+      <!-- Hero Banner -->
+      <div class="bg-gradient-to-br from-slate-900 via-slate-800 to-emerald-950 text-white rounded-2xl p-6 shadow-lg border border-slate-800">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 items-center">
+          <div class="lg:col-span-2 space-y-3">
+            <div class="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-emerald-500/20 border border-emerald-400/30 text-emerald-300 text-xs font-semibold">
+              <span>🌱</span> Cellular Respiration &amp; Volumetric Respirometry
+            </div>
+            <h2 class="text-2xl sm:text-3xl font-extrabold tracking-tight">Measuring Oxygen Consumption in Germinating vs. Dormant Pea Seeds</h2>
+            <p class="text-slate-300 text-sm leading-relaxed">
+              Each individual cell is responsible for the energy exchanges necessary to sustain its ordered structure. Cells accomplish this task by breaking down nutrient molecules to generate ATP (adenosine triphosphate), which can then be used to run cellular processes that require energy. In this investigation, you will use respirometry techniques to measure gas volume changes and calculate the rate of oxygen consumption in germinating and dormant pea seeds at different temperatures.
+            </p>
+            <div class="pt-2 flex flex-wrap gap-3">
+              <button type="button" id="btnStartDay1FromHero" class="px-4 py-2.5 rounded-xl bg-emerald-500 hover:bg-emerald-400 text-slate-950 font-bold text-sm transition shadow-md">
+                Start Day 1: Pea Volume &amp; Assembly →
+              </button>
+              <button type="button" id="btnJumpDay2FromHero" class="px-4 py-2.5 rounded-xl bg-slate-700/80 hover:bg-slate-700 text-white font-semibold text-sm border border-slate-600 transition">
+                Jump Straight to Day 2 Water Baths →
+              </button>
+            </div>
+          </div>
+
+          <!-- Chemical Equations Card (From Handout Pages 1-2) -->
+          <div class="bg-slate-900/90 border border-slate-700/80 rounded-xl p-4 space-y-3.5 shadow-inner">
+            <div>
+              <div class="text-xs font-bold uppercase tracking-wider text-emerald-400 mb-1">1. Cellular Respiration Equation</div>
+              <div class="mono text-xs sm:text-sm bg-slate-950 px-3 py-2 rounded-lg border border-slate-800 text-emerald-200 font-semibold text-center">
+                C₆H₁₂O₆ + 6O₂ → 6CO₂ + 6H₂O
+              </div>
+              <p class="text-xs text-slate-400 mt-1">Requires nutrient molecules and oxygen; carbon dioxide and water are products.</p>
+            </div>
+
+            <div>
+              <div class="text-xs font-bold uppercase tracking-wider text-amber-400 mb-1">2. Potassium Hydroxide Reaction</div>
+              <div class="mono text-xs sm:text-sm bg-slate-950 px-3 py-2 rounded-lg border border-slate-800 text-amber-200 font-semibold text-center">
+                CO₂ + 2KOH → K₂CO₃ + H₂O
+              </div>
+              <p class="text-xs text-slate-400 mt-1">Potassium carbonate (K₂CO₃) is a solid precipitate.</p>
+            </div>
+
+            <div>
+              <div class="text-xs font-bold uppercase tracking-wider text-sky-400 mb-1">3. The Ideal Gas Law</div>
+              <div class="mono text-xs sm:text-sm bg-slate-950 px-3 py-2 rounded-lg border border-slate-800 text-sky-200 font-semibold text-center">
+                P · V = n · R · T
+              </div>
+              <p class="text-xs text-slate-400 mt-1">P = pressure, V = volume, n = number of molecules of gas, R = gas constant, T = temperature (in K°).</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Lab Objectives & Ideal Gas Law Principles + Experimental Setup Matrix -->
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Objectives & Ideal Gas Law Concepts from Handout Pages 1-2 -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <h3 class="text-base font-bold text-slate-900">Investigation Objectives &amp; Gas Law Principles</h3>
+              <p class="text-xs text-slate-500">Review these core concepts from Pages 1–2 of your lab handout before starting</p>
+            </div>
+            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-sky-50 text-sky-700 border border-sky-200">PV = nRT</span>
+          </div>
+
+          <div class="rounded-xl p-4 bg-slate-50 border border-slate-200 space-y-2 text-xs text-slate-700">
+            <div class="font-bold text-slate-900 text-sm">Lab Objectives:</div>
+            <ul class="list-disc pl-5 space-y-1">
+              <li>Understand the relationships between temperature, pressure, and volume.</li>
+              <li>Study the effects of diffusion through a semipermeable membrane.</li>
+              <li>Quantify oxygen consumption rates in germinating peas under different conditions.</li>
+              <li>Predict the effect of temperature and germination state on the rate of cell respiration.</li>
+            </ul>
+          </div>
+
+          <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 text-xs space-y-2 text-slate-700">
+            <div class="font-bold text-slate-900 text-sm">5 Important Concepts About Gases (from PV = nRT):</div>
+            <p>1. If temperature and pressure are kept constant, then the volume of the gas is directly proportional to the number of molecules of gas.</p>
+            <p>2. If the temperature and volume remain constant, then the pressure of the gas changes in direct proportion to the number of molecules of gas present.</p>
+            <p>3. If the number of gas molecules and the temperature remain constant, then the pressure is inversely proportional to the volume.</p>
+            <p>4. If the temperature changes and the number of gas molecules are kept constant, then either pressure or volume (or both) will change in direct proportion to the temperature.</p>
+            <p>5. Gases and fluids flow from regions of high pressure to regions of low pressure.</p>
+          </div>
+        </div>
+
+        <!-- Six Respirometers Experimental Design Table (Handout Page 2) -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <h3 class="text-base font-bold text-slate-900">Experimental Setup: The 6 Respirometers</h3>
+              <p class="text-xs text-slate-500">Two sets of three respirometers incubated at Room Temperature and 10°C</p>
+            </div>
+            <span class="px-2.5 py-1 rounded-full text-xs font-semibold bg-indigo-50 text-indigo-700 border border-indigo-200">6 Respirometers</span>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+              <thead>
+                <tr class="bg-slate-100 text-slate-700 border-b border-slate-200">
+                  <th class="py-2.5 px-3 font-bold">Respirometer</th>
+                  <th class="py-2.5 px-3 font-bold">Temperature</th>
+                  <th class="py-2.5 px-3 font-bold">Contents</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-200">
+                <tr class="hover:bg-slate-50">
+                  <td class="py-2.5 px-3 font-bold text-emerald-700">1</td>
+                  <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-medium">Room</span></td>
+                  <td class="py-2.5 px-3 font-medium">Germinating Seeds</td>
+                </tr>
+                <tr class="hover:bg-slate-50">
+                  <td class="py-2.5 px-3 font-bold text-emerald-700">2</td>
+                  <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-medium">Room</span></td>
+                  <td class="py-2.5 px-3 font-medium">Dry Seeds + Beads</td>
+                </tr>
+                <tr class="hover:bg-slate-50">
+                  <td class="py-2.5 px-3 font-bold text-emerald-700">3</td>
+                  <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-medium">Room</span></td>
+                  <td class="py-2.5 px-3 font-medium">Beads</td>
+                </tr>
+                <tr class="hover:bg-slate-50">
+                  <td class="py-2.5 px-3 font-bold text-sky-700">4</td>
+                  <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded bg-sky-100 text-sky-800 font-medium">10°C</span></td>
+                  <td class="py-2.5 px-3 font-medium">Germinating Seeds</td>
+                </tr>
+                <tr class="hover:bg-slate-50">
+                  <td class="py-2.5 px-3 font-bold text-sky-700">5</td>
+                  <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded bg-sky-100 text-sky-800 font-medium">10°C</span></td>
+                  <td class="py-2.5 px-3 font-medium">Dry Seeds + Beads</td>
+                </tr>
+                <tr class="hover:bg-slate-50">
+                  <td class="py-2.5 px-3 font-bold text-sky-700">6</td>
+                  <td class="py-2.5 px-3"><span class="px-2 py-0.5 rounded bg-sky-100 text-sky-800 font-medium">10°C</span></td>
+                  <td class="py-2.5 px-3 font-medium">Beads</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="bg-amber-50 border border-amber-200 rounded-xl p-3 text-xs text-amber-900 flex items-start gap-2.5">
+            <span class="text-base leading-none">⚠️</span>
+            <div>
+              <strong>Past Student Hints &amp; Safety:</strong> Wear safety goggles. 15% KOH is caustic—avoid direct skin contact. Make sure not to get KOH on the sides of the respirometer, and place a small wad of dry non-absorbent cotton on top of the KOH-soaked absorbent cotton.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         TAB 2: DAY 1 — VOLUME DISPLACEMENT & VIAL ASSEMBLY
+         ========================================== -->
+    <section id="tab-day1" class="tab-panel hidden space-y-6">
+      <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-emerald-600">Procedure: Day 1 (Steps 1–11)</span>
+          <h2 class="text-xl font-bold text-slate-900">Water Displacement Volume Matching &amp; Respirometer Assembly</h2>
+          <p class="text-xs text-slate-500">Use the 100-mL graduated cylinder (starting with 50.0 mL of water) to measure the final water level for each set of seeds/beads, then calculate and record the displaced volumes in Table 1.</p>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button type="button" id="btnAutoCompleteDay1" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs sm:text-sm font-bold transition shadow-sm">
+            ⚡ Quick-Complete Day 1 Setup
+          </button>
+          <button type="button" id="btnResetDay1" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs sm:text-sm font-semibold transition">
+            Reset Day 1
+          </button>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Left Column: Interactive 100-mL Graduated Cylinder Bench (7 cols) -->
+        <div class="lg:col-span-7 bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-5">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <h3 class="text-base font-bold text-slate-900">Step A: 100-mL Graduated Cylinder Displacement</h3>
+              <p class="text-xs text-slate-500">Initial water volume is <strong>50.0 mL</strong>. Observe the Final Volume (mL) after adding peas/beads and calculate the displaced volume in Table 1 below.</p>
+            </div>
+          </div>
+
+          <!-- 3 Cylinder Stations Side-by-Side -->
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <!-- Cylinder 1: Germinating Peas -->
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-3.5 flex flex-col items-center text-center space-y-3">
+              <div class="w-full flex items-center justify-between text-xs font-bold text-slate-700">
+                <span>Vials 1 &amp; 4</span>
+                <span class="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">Germinating</span>
+              </div>
+
+              <!-- SVG Graduated Cylinder 1 -->
+              <svg viewBox="0 0 120 200" class="w-28 h-44">
+                <rect x="25" y="185" width="70" height="8" rx="3" fill="#475569" />
+                <rect x="38" y="15" width="44" height="170" rx="2" fill="#f8fafc" stroke="#475569" stroke-width="2" />
+                <rect id="cyl1Water" x="40" y="95" width="40" height="90" fill="#38bdf8" fill-opacity="0.45" />
+                <path id="cyl1Meniscus" d="M40,95 Q60,99 80,95" fill="none" stroke="#0284c7" stroke-width="2" />
+                <g id="cyl1Peas" class="hidden">
+                  <circle cx="48" cy="177" r="5" fill="#16a34a" /><circle cx="58" cy="178" r="5" fill="#15803d" /><circle cx="69" cy="177" r="5" fill="#16a34a" />
+                  <circle cx="46" cy="168" r="5" fill="#22c55e" /><circle cx="56" cy="169" r="5" fill="#16a34a" /><circle cx="66" cy="168" r="5" fill="#15803d" /><circle cx="74" cy="172" r="4.5" fill="#16a34a" />
+                  <circle cx="51" cy="160" r="5" fill="#16a34a" /><circle cx="62" cy="160" r="5" fill="#22c55e" /><circle cx="71" cy="161" r="4.5" fill="#15803d" />
+                </g>
+                <line x1="38" y1="60" x2="48" y2="60" stroke="#334155" stroke-width="1.2" /><text x="34" y="63" text-anchor="end" font-size="8" fill="#334155">70</text>
+                <line x1="38" y1="77.5" x2="48" y2="77.5" stroke="#334155" stroke-width="1.2" /><text x="34" y="80" text-anchor="end" font-size="8" fill="#334155">60</text>
+                <line x1="38" y1="95" x2="50" y2="95" stroke="#0f172a" stroke-width="1.5" /><text x="34" y="98" text-anchor="end" font-size="8" font-weight="bold" fill="#0f172a">50</text>
+                <line x1="38" y1="112.5" x2="48" y2="112.5" stroke="#334155" stroke-width="1.2" /><text x="34" y="115" text-anchor="end" font-size="8" fill="#334155">40</text>
+                <line x1="38" y1="130" x2="48" y2="130" stroke="#334155" stroke-width="1.2" /><text x="34" y="133" text-anchor="end" font-size="8" fill="#334155">30</text>
+              </svg>
+
+              <div class="w-full bg-white rounded-lg p-2 border border-slate-200 text-xs space-y-1">
+                <div class="flex justify-between"><span>Initial H₂O:</span><span class="mono font-semibold">50.0 mL</span></div>
+                <div class="flex justify-between"><span>Final Level:</span><span id="cyl1FinalText" class="mono font-bold text-sky-700">50.0 mL</span></div>
+              </div>
+
+              <button type="button" id="btnAddGermPeas" class="w-full py-2 px-3 rounded-lg bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-sm">
+                + Add 25 Germinating Peas
+              </button>
+            </div>
+
+            <!-- Cylinder 2: Dry Peas + Glass Beads -->
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-3.5 flex flex-col items-center text-center space-y-3">
+              <div class="w-full flex items-center justify-between text-xs font-bold text-slate-700">
+                <span>Vials 2 &amp; 5</span>
+                <span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800">Dry + Beads</span>
+              </div>
+
+              <!-- SVG Graduated Cylinder 2 -->
+              <svg viewBox="0 0 120 200" class="w-28 h-44">
+                <rect x="25" y="185" width="70" height="8" rx="3" fill="#475569" />
+                <rect x="38" y="15" width="44" height="170" rx="2" fill="#f8fafc" stroke="#475569" stroke-width="2" />
+                <rect id="cyl2Water" x="40" y="95" width="40" height="90" fill="#38bdf8" fill-opacity="0.45" />
+                <path id="cyl2Meniscus" d="M40,95 Q60,99 80,95" fill="none" stroke="#0284c7" stroke-width="2" />
+                <g id="cyl2DryPeas" class="hidden">
+                  <circle cx="47" cy="179" r="3.8" fill="#ca8a04" /><circle cx="56" cy="179" r="3.8" fill="#a16207" /><circle cx="65" cy="179" r="3.8" fill="#ca8a04" /><circle cx="73" cy="179" r="3.8" fill="#eab308" />
+                  <circle cx="51" cy="172" r="3.8" fill="#a16207" /><circle cx="61" cy="172" r="3.8" fill="#ca8a04" /><circle cx="70" cy="172" r="3.8" fill="#a16207" />
+                </g>
+                <g id="cyl2Beads" class="hidden">
+                  <circle cx="48" cy="164" r="4" fill="#e2e8f0" stroke="#64748b" stroke-width="1" /><circle cx="58" cy="164" r="4" fill="#cbd5e1" stroke="#64748b" stroke-width="1" /><circle cx="68" cy="164" r="4" fill="#e2e8f0" stroke="#64748b" stroke-width="1" />
+                  <circle cx="53" cy="157" r="4" fill="#f1f5f9" stroke="#64748b" stroke-width="1" /><circle cx="64" cy="157" r="4" fill="#cbd5e1" stroke="#64748b" stroke-width="1" />
+                </g>
+                <line x1="38" y1="60" x2="48" y2="60" stroke="#334155" stroke-width="1.2" /><text x="34" y="63" text-anchor="end" font-size="8" fill="#334155">70</text>
+                <line x1="38" y1="77.5" x2="48" y2="77.5" stroke="#334155" stroke-width="1.2" /><text x="34" y="80" text-anchor="end" font-size="8" fill="#334155">60</text>
+                <line x1="38" y1="95" x2="50" y2="95" stroke="#0f172a" stroke-width="1.5" /><text x="34" y="98" text-anchor="end" font-size="8" font-weight="bold" fill="#0f172a">50</text>
+                <line x1="38" y1="112.5" x2="48" y2="112.5" stroke="#334155" stroke-width="1.2" /><text x="34" y="115" text-anchor="end" font-size="8" fill="#334155">40</text>
+                <line x1="38" y1="130" x2="48" y2="130" stroke="#334155" stroke-width="1.2" /><text x="34" y="133" text-anchor="end" font-size="8" fill="#334155">30</text>
+              </svg>
+
+              <div class="w-full bg-white rounded-lg p-2 border border-slate-200 text-xs space-y-1">
+                <div class="flex justify-between"><span>Initial H₂O:</span><span class="mono font-semibold">50.0 mL</span></div>
+                <div class="flex justify-between"><span>Final Level:</span><span id="cyl2FinalText" class="mono font-bold text-sky-700">50.0 mL</span></div>
+              </div>
+
+              <div class="w-full flex flex-col gap-1.5">
+                <button type="button" id="btnAddDryPeas" class="w-full py-1.5 px-2.5 rounded-lg bg-amber-600 hover:bg-amber-500 text-white text-xs font-bold transition shadow-sm">
+                  1. Add 25 Dry Peas
+                </button>
+                <button type="button" id="btnAddBeadsToDry" class="w-full py-1.5 px-2.5 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold transition shadow-sm disabled:opacity-40" disabled>
+                  2. Add Beads to Match Vol
+                </button>
+              </div>
+            </div>
+
+            <!-- Cylinder 3: Glass Beads Alone -->
+            <div class="rounded-xl border border-slate-200 bg-slate-50 p-3.5 flex flex-col items-center text-center space-y-3">
+              <div class="w-full flex items-center justify-between text-xs font-bold text-slate-700">
+                <span>Vials 3 &amp; 6</span>
+                <span class="px-2 py-0.5 rounded bg-slate-200 text-slate-800">Beads Only</span>
+              </div>
+
+              <!-- SVG Graduated Cylinder 3 -->
+              <svg viewBox="0 0 120 200" class="w-28 h-44">
+                <rect x="25" y="185" width="70" height="8" rx="3" fill="#475569" />
+                <rect x="38" y="15" width="44" height="170" rx="2" fill="#f8fafc" stroke="#475569" stroke-width="2" />
+                <rect id="cyl3Water" x="40" y="95" width="40" height="90" fill="#38bdf8" fill-opacity="0.45" />
+                <path id="cyl3Meniscus" d="M40,95 Q60,99 80,95" fill="none" stroke="#0284c7" stroke-width="2" />
+                <g id="cyl3Beads" class="hidden">
+                  <circle cx="48" cy="178" r="4.5" fill="#e2e8f0" stroke="#64748b" stroke-width="1" /><circle cx="58" cy="178" r="4.5" fill="#cbd5e1" stroke="#64748b" stroke-width="1" /><circle cx="69" cy="178" r="4.5" fill="#e2e8f0" stroke="#64748b" stroke-width="1" />
+                  <circle cx="47" cy="169" r="4.5" fill="#cbd5e1" stroke="#64748b" stroke-width="1" /><circle cx="57" cy="169" r="4.5" fill="#f1f5f9" stroke="#64748b" stroke-width="1" /><circle cx="68" cy="169" r="4.5" fill="#cbd5e1" stroke="#64748b" stroke-width="1" />
+                  <circle cx="52" cy="160" r="4.5" fill="#e2e8f0" stroke="#64748b" stroke-width="1" /><circle cx="63" cy="160" r="4.5" fill="#f1f5f9" stroke="#64748b" stroke-width="1" />
+                </g>
+                <line x1="38" y1="60" x2="48" y2="60" stroke="#334155" stroke-width="1.2" /><text x="34" y="63" text-anchor="end" font-size="8" fill="#334155">70</text>
+                <line x1="38" y1="77.5" x2="48" y2="77.5" stroke="#334155" stroke-width="1.2" /><text x="34" y="80" text-anchor="end" font-size="8" fill="#334155">60</text>
+                <line x1="38" y1="95" x2="50" y2="95" stroke="#0f172a" stroke-width="1.5" /><text x="34" y="98" text-anchor="end" font-size="8" font-weight="bold" fill="#0f172a">50</text>
+                <line x1="38" y1="112.5" x2="48" y2="112.5" stroke="#334155" stroke-width="1.2" /><text x="34" y="115" text-anchor="end" font-size="8" fill="#334155">40</text>
+                <line x1="38" y1="130" x2="48" y2="130" stroke="#334155" stroke-width="1.2" /><text x="34" y="133" text-anchor="end" font-size="8" fill="#334155">30</text>
+              </svg>
+
+              <div class="w-full bg-white rounded-lg p-2 border border-slate-200 text-xs space-y-1">
+                <div class="flex justify-between"><span>Initial H₂O:</span><span class="mono font-semibold">50.0 mL</span></div>
+                <div class="flex justify-between"><span>Final Level:</span><span id="cyl3FinalText" class="mono font-bold text-sky-700">50.0 mL</span></div>
+              </div>
+
+              <button type="button" id="btnAddBeadsOnly" class="w-full py-2 px-3 rounded-lg bg-slate-700 hover:bg-slate-600 text-white text-xs font-bold transition shadow-sm disabled:opacity-40" disabled>
+                + Fill Beads to Equal Pea Vol
+              </button>
+            </div>
+          </div>
+
+          <!-- Table 1: Student Entry for Volume Calculation -->
+          <div class="bg-slate-50 rounded-xl p-4 border border-slate-200 space-y-2">
+            <div class="flex items-center justify-between">
+              <h4 class="text-xs font-bold uppercase tracking-wider text-slate-700">Table 1: Calculation of Volume in Respirometers</h4>
+              <span id="table1StatusBadge" class="text-xs font-semibold text-slate-600">Record Final Volumes &amp; Calculate Displaced Volumes</span>
+            </div>
+            <div class="overflow-x-auto">
+              <table class="w-full text-xs border-collapse bg-white rounded-lg overflow-hidden border border-slate-200">
+                <thead>
+                  <tr class="bg-slate-100 text-slate-700 border-b border-slate-200">
+                    <th class="py-2 px-3 text-left font-bold">Measurement</th>
+                    <th class="py-2 px-3 text-center font-bold">Respirometer 1 &amp; 4<br><span class="font-normal text-slate-500">(germinating seeds)</span></th>
+                    <th class="py-2 px-3 text-center font-bold">Respirometer 2 &amp; 5<br><span class="font-normal text-slate-500">(non-germinating + beads)</span></th>
+                    <th class="py-2 px-3 text-center font-bold">Respirometer 3 &amp; 6<br><span class="font-normal text-slate-500">(beads only)</span></th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-200 mono">
+                  <tr>
+                    <td class="py-2 px-3 font-sans font-semibold text-slate-700">Initial Volume (mL)</td>
+                    <td class="py-2 px-3 text-center">50.0</td>
+                    <td class="py-2 px-3 text-center">50.0</td>
+                    <td class="py-2 px-3 text-center">50.0</td>
+                  </tr>
+                  <tr>
+                    <td class="py-2 px-3 font-sans font-semibold text-slate-700">Final Volume (mL)</td>
+                    <td id="t1Final1" class="py-2 px-3 text-center font-bold text-sky-700">--</td>
+                    <td id="t1Final2" class="py-2 px-3 text-center font-bold text-sky-700">--</td>
+                    <td id="t1Final3" class="py-2 px-3 text-center font-bold text-sky-700">--</td>
+                  </tr>
+                  <tr class="bg-emerald-50/50">
+                    <td class="py-2 px-3 font-sans font-bold text-slate-900">Volume of beads/seeds (mL)</td>
+                    <td class="py-1.5 px-2 text-center">
+                      <input type="number" step="0.1" id="t1VolInput1" placeholder="Enter mL" class="w-24 text-center border border-slate-300 rounded px-1.5 py-1 text-xs font-bold bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500" />
+                    </td>
+                    <td class="py-1.5 px-2 text-center">
+                      <input type="number" step="0.1" id="t1VolInput2" placeholder="Enter mL" class="w-24 text-center border border-slate-300 rounded px-1.5 py-1 text-xs font-bold bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500" />
+                    </td>
+                    <td class="py-1.5 px-2 text-center">
+                      <input type="number" step="0.1" id="t1VolInput3" placeholder="Enter mL" class="w-24 text-center border border-slate-300 rounded px-1.5 py-1 text-xs font-bold bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500" />
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Column: Step B — Respirometer Vial Layer Assembly & Leak Check (5 cols) -->
+        <div class="lg:col-span-5 bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between space-y-4">
+          <div class="space-y-3">
+            <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+              <div>
+                <h3 class="text-base font-bold text-slate-900">Step B: Assemble the 6 Respirometer Vials</h3>
+                <p class="text-xs text-slate-500">Follow Procedure Steps 7–11 in exact order to assemble and seal each respirometer.</p>
+              </div>
+              <span id="assemblyStepCounter" class="mono text-xs font-bold px-2.5 py-1 rounded-lg bg-slate-100 text-slate-800">0 / 5 Steps</span>
+            </div>
+
+            <!-- Interactive Cross-Section Diagram of the 3 Vial Types -->
+            <div class="bg-slate-900 rounded-xl p-4 flex flex-col items-center">
+              <div class="text-xs font-semibold text-slate-300 mb-2">Respirometer Cross-Section Preview (Vials 1–3 &amp; 4–6)</div>
+              <svg viewBox="0 0 340 210" class="w-full max-w-md h-48">
+                <text x="68" y="25" text-anchor="end" font-size="9" fill="#94a3b8">1-mL Pipet Tip</text>
+                <line x1="72" y1="22" x2="108" y2="22" stroke="#64748b" stroke-width="1" />
+
+                <text x="68" y="74" text-anchor="end" font-size="9" fill="#cbd5e1">Stopper + Parafilm</text>
+                <line x1="72" y1="71" x2="96" y2="71" stroke="#64748b" stroke-width="1" />
+
+                <text x="68" y="122" text-anchor="end" font-size="9" fill="#86efac">Seeds / Glass Beads</text>
+                <line x1="72" y1="119" x2="93" y2="119" stroke="#64748b" stroke-width="1" />
+
+                <text x="68" y="156" text-anchor="end" font-size="9" fill="#fde68a">Dry Non-Abs. Cotton</text>
+                <line x1="72" y1="153" x2="93" y2="153" stroke="#64748b" stroke-width="1" />
+
+                <text x="68" y="178" text-anchor="end" font-size="9" fill="#7dd3fc">Abs. Cotton + 15% KOH</text>
+                <line x1="72" y1="175" x2="93" y2="175" stroke="#64748b" stroke-width="1" />
+
+                <!-- VIAL 1: Germinating Peas -->
+                <g transform="translate(90, 0)">
+                  <rect x="5" y="75" width="44" height="115" rx="4" fill="#1e293b" stroke="#94a3b8" stroke-width="2" />
+                  <rect x="7" y="182" width="40" height="6" fill="#64748b" />
+                  <rect id="vialLayerCotton1" x="8" y="164" width="38" height="17" rx="3" fill="#f8fafc" class="opacity-20 transition-opacity duration-300" />
+                  <rect id="vialLayerKOH1" x="8" y="164" width="38" height="17" rx="3" fill="#38bdf8" fill-opacity="0.55" class="hidden" />
+                  <rect id="vialLayerDryCotton1" x="8" y="148" width="38" height="15" rx="3" fill="#fef3c7" class="opacity-20 transition-opacity duration-300" />
+                  <g id="vialLayerContents1" class="opacity-20 transition-opacity duration-300">
+                    <circle cx="16" cy="138" r="5.5" fill="#22c55e" /><circle cx="27" cy="139" r="5.5" fill="#16a34a" /><circle cx="38" cy="138" r="5.5" fill="#22c55e" />
+                    <circle cx="18" cy="126" r="5.5" fill="#16a34a" /><circle cx="29" cy="127" r="5.5" fill="#22c55e" /><circle cx="37" cy="126" r="5" fill="#15803d" />
+                    <circle cx="21" cy="115" r="5.5" fill="#22c55e" /><circle cx="33" cy="115" r="5.5" fill="#16a34a" />
+                  </g>
+                  <g id="vialLayerStopper1" class="opacity-20 transition-opacity duration-300">
+                    <polygon points="7,62 47,62 43,82 11,82" fill="#334155" stroke="#cbd5e1" stroke-width="1" />
+                    <rect x="6" y="71" width="42" height="5" fill="#facc15" fill-opacity="0.75" />
+                    <rect x="24" y="10" width="6" height="68" fill="#e2e8f0" fill-opacity="0.8" stroke="#94a3b8" stroke-width="1" />
+                  </g>
+                  <text x="27" y="203" text-anchor="middle" font-size="9" font-weight="bold" fill="#86efac">Germinating</text>
+                </g>
+
+                <!-- VIAL 2: Dry Peas + Beads -->
+                <g transform="translate(168, 0)">
+                  <rect x="5" y="75" width="44" height="115" rx="4" fill="#1e293b" stroke="#94a3b8" stroke-width="2" />
+                  <rect x="7" y="182" width="40" height="6" fill="#64748b" />
+                  <rect id="vialLayerCotton2" x="8" y="164" width="38" height="17" rx="3" fill="#f8fafc" class="opacity-20 transition-opacity duration-300" />
+                  <rect id="vialLayerKOH2" x="8" y="164" width="38" height="17" rx="3" fill="#38bdf8" fill-opacity="0.55" class="hidden" />
+                  <rect id="vialLayerDryCotton2" x="8" y="148" width="38" height="15" rx="3" fill="#fef3c7" class="opacity-20 transition-opacity duration-300" />
+                  <g id="vialLayerContents2" class="opacity-20 transition-opacity duration-300">
+                    <circle cx="15" cy="140" r="4.2" fill="#eab308" /><circle cx="25" cy="140" r="4.2" fill="#ca8a04" /><circle cx="35" cy="140" r="4.2" fill="#eab308" />
+                    <circle cx="20" cy="131" r="4.2" fill="#ca8a04" /><circle cx="31" cy="131" r="4.2" fill="#eab308" />
+                    <circle cx="16" cy="121" r="4.5" fill="#cbd5e1" /><circle cx="27" cy="121" r="4.5" fill="#94a3b8" /><circle cx="37" cy="121" r="4.5" fill="#cbd5e1" />
+                    <circle cx="22" cy="112" r="4.5" fill="#e2e8f0" /><circle cx="33" cy="112" r="4.5" fill="#cbd5e1" />
+                  </g>
+                  <g id="vialLayerStopper2" class="opacity-20 transition-opacity duration-300">
+                    <polygon points="7,62 47,62 43,82 11,82" fill="#334155" stroke="#cbd5e1" stroke-width="1" />
+                    <rect x="6" y="71" width="42" height="5" fill="#facc15" fill-opacity="0.75" />
+                    <rect x="24" y="10" width="6" height="68" fill="#e2e8f0" fill-opacity="0.8" stroke="#94a3b8" stroke-width="1" />
+                  </g>
+                  <text x="27" y="203" text-anchor="middle" font-size="9" font-weight="bold" fill="#fde047">Dry + Beads</text>
+                </g>
+
+                <!-- VIAL 3: Glass Beads Alone -->
+                <g transform="translate(246, 0)">
+                  <rect x="5" y="75" width="44" height="115" rx="4" fill="#1e293b" stroke="#94a3b8" stroke-width="2" />
+                  <rect x="7" y="182" width="40" height="6" fill="#64748b" />
+                  <rect id="vialLayerCotton3" x="8" y="164" width="38" height="17" rx="3" fill="#f8fafc" class="opacity-20 transition-opacity duration-300" />
+                  <rect id="vialLayerKOH3" x="8" y="164" width="38" height="17" rx="3" fill="#38bdf8" fill-opacity="0.55" class="hidden" />
+                  <rect id="vialLayerDryCotton3" x="8" y="148" width="38" height="15" rx="3" fill="#fef3c7" class="opacity-20 transition-opacity duration-300" />
+                  <g id="vialLayerContents3" class="opacity-20 transition-opacity duration-300">
+                    <circle cx="16" cy="139" r="4.8" fill="#cbd5e1" /><circle cx="27" cy="139" r="4.8" fill="#94a3b8" /><circle cx="38" cy="139" r="4.8" fill="#cbd5e1" />
+                    <circle cx="17" cy="128" r="4.8" fill="#e2e8f0" /><circle cx="28" cy="128" r="4.8" fill="#cbd5e1" /><circle cx="38" cy="128" r="4.8" fill="#94a3b8" />
+                    <circle cx="21" cy="117" r="4.8" fill="#cbd5e1" /><circle cx="33" cy="117" r="4.8" fill="#e2e8f0" />
+                  </g>
+                  <g id="vialLayerStopper3" class="opacity-20 transition-opacity duration-300">
+                    <polygon points="7,62 47,62 43,82 11,82" fill="#334155" stroke="#cbd5e1" stroke-width="1" />
+                    <rect x="6" y="71" width="42" height="5" fill="#facc15" fill-opacity="0.75" />
+                    <rect x="24" y="10" width="6" height="68" fill="#e2e8f0" fill-opacity="0.8" stroke="#94a3b8" stroke-width="1" />
+                  </g>
+                  <text x="27" y="203" text-anchor="middle" font-size="9" font-weight="bold" fill="#cbd5e1">Beads Only</text>
+                </g>
+              </svg>
+            </div>
+
+            <!-- Interactive Assembly Step Buttons -->
+            <div class="space-y-2">
+              <button type="button" id="btnAsmStep1" class="w-full text-left px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-semibold flex items-center justify-between transition">
+                <span>1. Place absorbent cotton wad at bottom of all 6 dry vials</span>
+                <span id="badgeAsm1" class="text-slate-400 font-mono">Pending</span>
+              </button>
+              <button type="button" id="btnAsmStep2" class="w-full text-left px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-semibold flex items-center justify-between transition disabled:opacity-40" disabled>
+                <span>2. Saturate cotton with equal drops of 15% KOH (avoid vial walls!)</span>
+                <span id="badgeAsm2" class="text-slate-400 font-mono">Pending</span>
+              </button>
+              <button type="button" id="btnAsmStep3" class="w-full text-left px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-semibold flex items-center justify-between transition disabled:opacity-40" disabled>
+                <span>3. Add dry non-absorbent cotton barrier above KOH cotton</span>
+                <span id="badgeAsm3" class="text-slate-400 font-mono">Pending</span>
+              </button>
+              <button type="button" id="btnAsmStep4" class="w-full text-left px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-semibold flex items-center justify-between transition disabled:opacity-40" disabled>
+                <span>4. Load equal-volume peas/beads into Vials 1–6 &amp; add weights</span>
+                <span id="badgeAsm4" class="text-slate-400 font-mono">Pending</span>
+              </button>
+              <button type="button" id="btnAsmStep5" class="w-full text-left px-3.5 py-2.5 rounded-xl border border-slate-200 bg-slate-50 hover:bg-slate-100 text-xs font-semibold flex items-center justify-between transition disabled:opacity-40" disabled>
+                <span>5. Insert 1-mL pipets &amp; stoppers, seal with Vaseline &amp; Parafilm + Leak Check</span>
+                <span id="badgeAsm5" class="text-slate-400 font-mono">Pending</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="pt-2 border-t border-slate-100 flex items-center justify-between">
+            <span id="day1ReadyStatus" class="text-xs font-medium text-slate-500">Complete steps above or click Quick-Complete</span>
+            <button type="button" id="btnProceedToDay2" class="px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-sm">
+              Proceed to Day 2 Water Baths →
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         TAB 3: DAY 2 — WATER BATH RESPIROMETRY LAB
+         ========================================== -->
+    <section id="tab-day2" class="tab-panel hidden space-y-6">
+      <!-- Top Control Deck for Day 2 -->
+      <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <span class="text-xs font-bold uppercase tracking-wider text-indigo-600">Procedure: Day 2 (Steps 1–6)</span>
+            <h2 class="text-xl font-bold text-slate-900">Water Bath Incubation &amp; Volumetric Pipette Time-Course (0–20 min)</h2>
+            <p class="text-xs text-slate-500">Equilibrate respirometers on the masking tape prop for 7 minutes, submerge completely, and observe pipette meniscus readings at 0, 5, 10, 15, and 20 minutes.</p>
+          </div>
+
+          <!-- Digital Lab Stopwatch & Phase Badge -->
+          <div class="flex items-center gap-3 bg-slate-900 text-white px-4 py-2.5 rounded-xl border border-slate-700 shadow-inner">
+            <div>
+              <div class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Lab Phase</div>
+              <div id="labPhaseLabel" class="text-xs font-bold text-amber-300">1. Ready for Equilibration</div>
+            </div>
+            <div class="h-8 w-px bg-slate-700"></div>
+            <div>
+              <div class="text-[10px] uppercase tracking-wider text-slate-400 font-semibold">Elapsed Time</div>
+              <div id="labTimerDisplay" class="mono text-lg font-extrabold text-emerald-400">00:00 min</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Step-by-Step Action Bar -->
+        <div class="flex flex-wrap items-center justify-between gap-3 pt-2 border-t border-slate-100">
+          <div class="flex flex-wrap items-center gap-2">
+            <button type="button" id="btnEquilibrate" class="px-3.5 py-2 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-xs font-bold transition shadow-sm">
+              1. Place on Tape Prop &amp; Equilibrate (7 min)
+            </button>
+            <button type="button" id="btnSubmerge" class="px-3.5 py-2 rounded-xl bg-sky-600 hover:bg-sky-500 text-white text-xs font-bold transition shadow-sm disabled:opacity-40" disabled>
+              2. Submerge Tubes &amp; Record Time 0
+            </button>
+            <button type="button" id="btnStep5Min" class="px-3.5 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-sm disabled:opacity-40" disabled>
+              3. Advance +5 Min &amp; Record Reading
+            </button>
+            <button type="button" id="btnAutoRunAllTime" class="px-3.5 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold transition shadow-sm">
+              ⏩ Auto-Run Full 20-Min Experiment
+            </button>
+          </div>
+
+          <div class="flex items-center gap-2">
+            <button type="button" id="btnResetDay2" class="px-3 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition">
+              Reset Day 2 Timer
+            </button>
+            <button type="button" id="btnGoToTable2" class="px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition">
+              Go to Table 2 &amp; Graphing →
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dual Water Baths Visual Bench + High-Precision Pipette Meniscus Magnifier -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Left 6 Cols: The Two Water Baths (Room Temp & 10°C Cold Bath) -->
+        <div class="lg:col-span-6 space-y-5">
+          <!-- Bath 1: Room Temperature Water Bath -->
+          <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-amber-500"></span>
+                <h3 class="text-sm font-bold text-slate-900">Room Temperature Water Bath (Respirometers 1, 2, 3)</h3>
+              </div>
+              <span id="roomBathTempBadge" class="mono text-xs font-bold px-2.5 py-1 rounded-lg bg-amber-50 text-amber-800 border border-amber-200">
+                🌡️ 25.0 °C
+              </span>
+            </div>
+
+            <!-- SVG Room Water Bath -->
+            <div class="bg-slate-900 rounded-xl p-3">
+              <svg viewBox="0 0 460 165" class="w-full h-36">
+                <rect x="15" y="15" width="430" height="135" rx="8" fill="#0f172a" stroke="#64748b" stroke-width="2.5" />
+                <rect x="18" y="22" width="424" height="125" rx="6" fill="#0284c7" fill-opacity="0.28" />
+                <rect id="roomTapeStrip" x="305" y="12" width="24" height="141" fill="#fde047" fill-opacity="0.85" stroke="#ca8a04" stroke-width="1" />
+                <text x="317" y="159" text-anchor="middle" font-size="8" font-weight="bold" fill="#fde047">Masking Tape Prop</text>
+
+                <rect x="415" y="25" width="6" height="90" rx="3" fill="#e2e8f0" />
+                <circle cx="418" cy="115" r="6" fill="#ef4444" />
+                <rect x="417" y="55" width="2" height="60" fill="#ef4444" />
+
+                <g id="roomBathTubesGroup" transform="translate(0, 0)">
+                  <g class="cursor-pointer" data-vial="1">
+                    <rect x="35" y="34" width="68" height="24" rx="3" fill="#1e293b" stroke="#94a3b8" stroke-width="1.5" />
+                    <circle cx="62" cy="46" r="4" fill="#22c55e" /><circle cx="74" cy="46" r="4" fill="#16a34a" /><circle cx="86" cy="46" r="4" fill="#22c55e" />
+                    <rect x="103" y="40" width="12" height="12" fill="#334155" />
+                    <rect x="115" y="43" width="250" height="6" fill="#e2e8f0" fill-opacity="0.85" stroke="#64748b" stroke-width="0.8" />
+                    <rect id="bathPipetWater1" x="342" y="44" width="23" height="4" fill="#0284c7" />
+                    <text x="42" y="30" font-size="9" font-weight="bold" fill="#86efac">#1 Germinating Peas</text>
+                  </g>
+
+                  <g class="cursor-pointer" data-vial="2" transform="translate(0, 40)">
+                    <rect x="35" y="34" width="68" height="24" rx="3" fill="#1e293b" stroke="#94a3b8" stroke-width="1.5" />
+                    <circle cx="62" cy="46" r="3.5" fill="#eab308" /><circle cx="74" cy="46" r="4" fill="#cbd5e1" /><circle cx="86" cy="46" r="3.5" fill="#ca8a04" />
+                    <rect x="103" y="40" width="12" height="12" fill="#334155" />
+                    <rect x="115" y="43" width="250" height="6" fill="#e2e8f0" fill-opacity="0.85" stroke="#64748b" stroke-width="0.8" />
+                    <rect id="bathPipetWater2" x="342" y="44" width="23" height="4" fill="#0284c7" />
+                    <text x="42" y="30" font-size="9" font-weight="bold" fill="#fde047">#2 Dry Peas + Beads</text>
+                  </g>
+
+                  <g class="cursor-pointer" data-vial="3" transform="translate(0, 80)">
+                    <rect x="35" y="34" width="68" height="24" rx="3" fill="#1e293b" stroke="#94a3b8" stroke-width="1.5" />
+                    <circle cx="62" cy="46" r="4" fill="#cbd5e1" /><circle cx="74" cy="46" r="4" fill="#94a3b8" /><circle cx="86" cy="46" r="4" fill="#cbd5e1" />
+                    <rect x="103" y="40" width="12" height="12" fill="#334155" />
+                    <rect x="115" y="43" width="250" height="6" fill="#e2e8f0" fill-opacity="0.85" stroke="#64748b" stroke-width="0.8" />
+                    <rect id="bathPipetWater3" x="342" y="44" width="23" height="4" fill="#0284c7" />
+                    <text x="42" y="30" font-size="9" font-weight="bold" fill="#cbd5e1">#3 Glass Beads Only</text>
+                  </g>
+                </g>
+              </svg>
+            </div>
+          </div>
+
+          <!-- Bath 2: 10°C Cold Water Bath -->
+          <div class="bg-white rounded-2xl p-4 border border-slate-200 shadow-sm space-y-3">
+            <div class="flex items-center justify-between">
+              <div class="flex items-center gap-2">
+                <span class="w-3 h-3 rounded-full bg-sky-500"></span>
+                <h3 class="text-sm font-bold text-slate-900">Cold Water Bath with Ice (Respirometers 4, 5, 6)</h3>
+              </div>
+              <span id="coldBathTempBadge" class="mono text-xs font-bold px-2.5 py-1 rounded-lg bg-sky-50 text-sky-800 border border-sky-200">
+                ❄️ 10.0 °C
+              </span>
+            </div>
+
+            <!-- SVG Cold Water Bath -->
+            <div class="bg-slate-900 rounded-xl p-3">
+              <svg viewBox="0 0 460 165" class="w-full h-36">
+                <rect x="15" y="15" width="430" height="135" rx="8" fill="#0f172a" stroke="#38bdf8" stroke-width="2.5" />
+                <rect x="18" y="22" width="424" height="125" rx="6" fill="#38bdf8" fill-opacity="0.35" />
+                <g class="ice-float">
+                  <rect x="235" y="25" width="18" height="12" rx="2" fill="#e0f2fe" fill-opacity="0.7" />
+                  <rect x="375" y="28" width="20" height="13" rx="2" fill="#e0f2fe" fill-opacity="0.7" />
+                  <rect x="275" y="128" width="16" height="11" rx="2" fill="#e0f2fe" fill-opacity="0.7" />
+                </g>
+                <rect id="coldTapeStrip" x="305" y="12" width="24" height="141" fill="#fde047" fill-opacity="0.85" stroke="#ca8a04" stroke-width="1" />
+                <text x="317" y="159" text-anchor="middle" font-size="8" font-weight="bold" fill="#fde047">Masking Tape Prop</text>
+
+                <rect x="415" y="25" width="6" height="90" rx="3" fill="#e2e8f0" />
+                <circle cx="418" cy="115" r="6" fill="#0284c7" />
+                <rect x="417" y="82" width="2" height="33" fill="#0284c7" />
+
+                <g id="coldBathTubesGroup">
+                  <g class="cursor-pointer" data-vial="4">
+                    <rect x="35" y="34" width="68" height="24" rx="3" fill="#1e293b" stroke="#94a3b8" stroke-width="1.5" />
+                    <circle cx="62" cy="46" r="4" fill="#22c55e" /><circle cx="74" cy="46" r="4" fill="#16a34a" /><circle cx="86" cy="46" r="4" fill="#22c55e" />
+                    <rect x="103" y="40" width="12" height="12" fill="#334155" />
+                    <rect x="115" y="43" width="250" height="6" fill="#e2e8f0" fill-opacity="0.85" stroke="#64748b" stroke-width="0.8" />
+                    <rect id="bathPipetWater4" x="342" y="44" width="23" height="4" fill="#0284c7" />
+                    <text x="42" y="30" font-size="9" font-weight="bold" fill="#86efac">#4 Germinating (10°C)</text>
+                  </g>
+
+                  <g class="cursor-pointer" data-vial="5" transform="translate(0, 40)">
+                    <rect x="35" y="34" width="68" height="24" rx="3" fill="#1e293b" stroke="#94a3b8" stroke-width="1.5" />
+                    <circle cx="62" cy="46" r="3.5" fill="#eab308" /><circle cx="74" cy="46" r="4" fill="#cbd5e1" /><circle cx="86" cy="46" r="3.5" fill="#ca8a04" />
+                    <rect x="103" y="40" width="12" height="12" fill="#334155" />
+                    <rect x="115" y="43" width="250" height="6" fill="#e2e8f0" fill-opacity="0.85" stroke="#64748b" stroke-width="0.8" />
+                    <rect id="bathPipetWater5" x="342" y="44" width="23" height="4" fill="#0284c7" />
+                    <text x="42" y="30" font-size="9" font-weight="bold" fill="#fde047">#5 Dry + Beads (10°C)</text>
+                  </g>
+
+                  <g class="cursor-pointer" data-vial="6" transform="translate(0, 80)">
+                    <rect x="35" y="34" width="68" height="24" rx="3" fill="#1e293b" stroke="#94a3b8" stroke-width="1.5" />
+                    <circle cx="62" cy="46" r="4" fill="#cbd5e1" /><circle cx="74" cy="46" r="4" fill="#94a3b8" /><circle cx="86" cy="46" r="4" fill="#cbd5e1" />
+                    <rect x="103" y="40" width="12" height="12" fill="#334155" />
+                    <rect x="115" y="43" width="250" height="6" fill="#e2e8f0" fill-opacity="0.85" stroke="#64748b" stroke-width="0.8" />
+                    <rect id="bathPipetWater6" x="342" y="44" width="23" height="4" fill="#0284c7" />
+                    <text x="42" y="30" font-size="9" font-weight="bold" fill="#cbd5e1">#6 Beads Only (10°C)</text>
+                  </g>
+                </g>
+              </svg>
+            </div>
+          </div>
+        </div>
+
+        <!-- Right 6 Cols: Zoomed-In 1.0-mL Graduated Pipette Meniscus Magnifier Rack -->
+        <div class="lg:col-span-6 bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between space-y-4">
+          <div>
+            <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+              <div>
+                <h3 class="text-base font-bold text-slate-900">Zoomed 1.0-mL Graduated Pipette Meniscus Reader</h3>
+                <p class="text-xs text-slate-500">Read the position of the water/air bubble meniscus in each pipette at 0, 5, 10, 15, and 20 minutes.</p>
+              </div>
+              <div class="flex items-center gap-1.5">
+                <label for="timeSliceSelector" class="text-xs font-semibold text-slate-600">Inspect Time:</label>
+                <select id="timeSliceSelector" class="mono text-xs font-bold bg-slate-100 border border-slate-300 rounded-lg px-2.5 py-1 text-slate-900">
+                  <option value="0">t = 0 min</option>
+                  <option value="5">t = 5 min</option>
+                  <option value="10">t = 10 min</option>
+                  <option value="15">t = 15 min</option>
+                  <option value="20">t = 20 min</option>
+                </select>
+              </div>
+            </div>
+
+            <!-- All 6 Zoomed Pipettes Live Display (Raw Meniscus Readings Only) -->
+            <div id="pipetteMagnifierList" class="space-y-3 mt-4"></div>
+          </div>
+
+          <div class="bg-slate-50 rounded-xl p-3.5 border border-slate-200 text-xs text-slate-700 flex items-start gap-2.5">
+            <span class="text-base">🔍</span>
+            <div>
+              <strong>Reading the Pipets (Page 4 Steps 4–6):</strong> The air bubble extends from the main chamber up the tube of the pipet. Record the position of the water meniscus in each pipet at Time Interval 0, and at the end of 5, 10, 15, and 20 minutes on Data Table 2.
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         TAB 4: DATA TABLES, RATE CALCULATIONS & GRAPHING (STUDENT WORKSPACE — NO AUTO-CALC)
+         ========================================== -->
+    <section id="tab-data" class="tab-panel hidden space-y-6">
+      <!-- Top Header for Student Data Analysis -->
+      <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <span class="text-xs font-bold uppercase tracking-wider text-emerald-600">Data &amp; Analysis (Page 5)</span>
+          <h2 class="text-xl font-bold text-slate-900">Table 2 Volumetric Calculations, Student Graphing &amp; Respiration Rates</h2>
+          <p class="text-xs text-slate-500">Use your raw pipette readings from the experiment to calculate <strong>Diff.*</strong> and <strong>Corrected diff. ∆</strong>, plot your calculated values, and determine the rate of O₂ consumption.</p>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2 no-print">
+          <button type="button" id="btnPlotStudentData" class="px-4 py-2 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold transition shadow-sm">
+            📈 Plot My Entered Table 2 Values
+          </button>
+          <button type="button" id="btnClearStudentTable2" class="px-3.5 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition">
+            Clear My Table 2 Entries
+          </button>
+        </div>
+      </div>
+
+      <!-- Formula Reference Strip (Verbatim from Page 5 of PDF) -->
+      <div class="bg-slate-900 text-white rounded-xl p-4 border border-slate-800 grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+        <div class="bg-slate-800/90 rounded-lg p-3 border border-slate-700">
+          <div class="text-emerald-400 font-bold uppercase tracking-wider mb-1">*Difference Formula (from Handout)</div>
+          <div class="mono font-semibold text-slate-100">*Difference = (initial reading at time 0) − (reading at time X)</div>
+        </div>
+        <div class="bg-slate-800/90 rounded-lg p-3 border border-slate-700">
+          <div class="text-sky-400 font-bold uppercase tracking-wider mb-1">∆ Corrected Difference Formula (from Handout)</div>
+          <div class="mono font-semibold text-slate-100">∆Corrected Difference = (initial seed reading at time 0 − seed reading at time X) − (initial bead reading at time 0 − bead reading at time X)</div>
+        </div>
+      </div>
+
+      <!-- Table 2 (Exact Replica of Page 5 Table 2 — Student Enters All Calculations) -->
+      <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-3">
+        <div class="flex flex-wrap items-center justify-between gap-2">
+          <h3 class="text-sm sm:text-base font-bold text-slate-900">
+            Table 2. Measurement of O₂ Consumption by Germinating and Non-Germinating Seeds at Room Temperature and 10°C using Volumetric Methods
+          </h3>
+          <span id="table2DatasetTag" class="mono text-xs font-semibold px-2.5 py-1 rounded bg-slate-100 text-slate-700">Group 1 Data</span>
+        </div>
+
+        <div class="overflow-x-auto">
+          <table class="w-full text-xs border-collapse border border-slate-300">
+            <thead>
+              <tr class="bg-slate-800 text-white">
+                <th rowspan="2" class="border border-slate-600 py-2.5 px-2 text-center font-bold">Temp<br>(°C)</th>
+                <th rowspan="2" class="border border-slate-600 py-2.5 px-2 text-center font-bold">Time<br>(min)</th>
+                <th colspan="2" class="border border-slate-600 py-2 px-2 text-center font-bold bg-slate-700">Beads Alone<br><span class="font-normal text-slate-300">(Vial 3 &amp; 6)</span></th>
+                <th colspan="3" class="border border-slate-600 py-2 px-2 text-center font-bold bg-emerald-900">Germinating Seeds<br><span class="font-normal text-emerald-200">(Vial 1 &amp; 4)</span></th>
+                <th colspan="3" class="border border-slate-600 py-2 px-2 text-center font-bold bg-amber-900">Nongerminating Seeds and Beads<br><span class="font-normal text-amber-200">(Vial 2 &amp; 5)</span></th>
+              </tr>
+              <tr class="bg-slate-100 text-slate-800 font-bold">
+                <th class="border border-slate-300 py-2 px-2 text-center">Reading at<br>Time X (mL)</th>
+                <th class="border border-slate-300 py-2 px-2 text-center">Diff.*<br>(mL)</th>
+                <th class="border border-slate-300 py-2 px-2 text-center">Reading at<br>Time X (mL)</th>
+                <th class="border border-slate-300 py-2 px-2 text-center">Diff.*<br>(mL)</th>
+                <th class="border border-slate-300 py-2 px-2 text-center bg-emerald-50 text-emerald-900">Corrected<br>diff. ∆ (mL)</th>
+                <th class="border border-slate-300 py-2 px-2 text-center">Reading at<br>Time X (mL)</th>
+                <th class="border border-slate-300 py-2 px-2 text-center">Diff.*<br>(mL)</th>
+                <th class="border border-slate-300 py-2 px-2 text-center bg-amber-50 text-amber-900">Corrected<br>diff. ∆ (mL)</th>
+              </tr>
+            </thead>
+            <tbody id="table2Body" class="mono"></tbody>
+          </table>
+        </div>
+        <p class="text-[11px] text-slate-500">
+          Note: Raw pipette meniscus readings are shown in the <strong>Reading at Time X</strong> columns. Complete all <strong>Diff.*</strong> and <strong>Corrected diff. ∆</strong> calculations yourself.
+        </p>
+      </div>
+
+      <!-- Graph & Rate Calculation Grid (Student-Driven Only) -->
+      <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+        <!-- Left 7 Cols: Student Graph Workspace -->
+        <div class="lg:col-span-7 bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+          <div class="flex flex-wrap items-center justify-between gap-2 border-b border-slate-100 pb-3">
+            <div>
+              <h3 class="text-base font-bold text-slate-900">Student Graph Workspace: Corrected O₂ Consumed (∆ mL) vs. Time (min)</h3>
+              <p class="text-xs text-slate-500">This coordinate grid starts blank. Enter your calculated <strong>Corrected diff. ∆</strong> values in Table 2 and click <strong>Plot My Entered Table 2 Values</strong> (or print the blank grid to graph by hand and draw your own best-fit lines).</p>
+            </div>
+            <div class="flex items-center gap-2 no-print">
+              <button type="button" id="btnClearChart" class="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-semibold transition">
+                Clear Graph to Blank Grid
+              </button>
+            </div>
+          </div>
+
+          <div class="relative h-80 w-full">
+            <canvas id="respirationChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Right 5 Cols: Post-Lab Question 5 Rate of O2 Consumption Table (Blank for Student Work) -->
+        <div class="lg:col-span-5 bg-white rounded-2xl p-5 border border-slate-200 shadow-sm flex flex-col justify-between space-y-4">
+          <div class="space-y-3">
+            <div class="border-b border-slate-100 pb-3">
+              <h3 class="text-base font-bold text-slate-900">Post-Lab #5: Calculate the Rate of O₂ Consumption</h3>
+              <p class="text-xs text-slate-500">Calculate the rate of O₂ consumption of the germinating and nongerminating seeds during the experiments at room temperature and at 10°C. Show your calculations for each.</p>
+            </div>
+
+            <div class="overflow-x-auto">
+              <table class="w-full text-xs border-collapse border border-slate-300">
+                <thead>
+                  <tr class="bg-slate-100 text-slate-800">
+                    <th class="border border-slate-300 py-2 px-2.5 text-left font-bold">Condition</th>
+                    <th class="border border-slate-300 py-2 px-2.5 text-left font-bold">Show Calculations<br><span class="font-normal text-slate-500">(show all work)</span></th>
+                    <th class="border border-slate-300 py-2 px-2.5 text-center font-bold">Rate<br><span class="font-normal text-slate-500">(mL O₂/min)</span></th>
+                  </tr>
+                </thead>
+                <tbody id="rateTableBody" class="divide-y divide-slate-200"></tbody>
+              </table>
+            </div>
+          </div>
+
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3.5 text-xs text-slate-700">
+            <strong>Handout Reminder:</strong> When graphing your data, create best-fit lines in addition to plotted data to calculate the rate of cellular respiration.
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ==========================================
+         TAB 5: POSSIBLE EXTENSION & POST-LAB QUESTIONS (1–8) — NO HINTS OR SPOILERS
+         ========================================== -->
+    <section id="tab-extension" class="tab-panel hidden space-y-6">
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Left Card: Possible Extension (Page 4) — Raw Pipette Data for Crickets / Mealworms -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+          <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <div>
+              <span class="text-xs font-bold uppercase tracking-wider text-emerald-600">Page 4 Possible Extension</span>
+              <h3 class="text-base font-bold text-slate-900">Living Organism Respirometry: Cricket or Mealworm</h3>
+              <p class="text-xs text-slate-500">Replace the peas in the respirometer chamber with a living organism (cricket or mealworm) and use the raw pipette readings below to determine its respiration rate in cold (10°C) and warm (25°C) water.</p>
+            </div>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-2">
+            <label for="extOrganismSelect" class="text-xs font-bold text-slate-700">Select Extension Organism:</label>
+            <select id="extOrganismSelect" class="flex-1 text-xs font-semibold bg-slate-50 border border-slate-300 rounded-lg px-3 py-2 text-slate-900">
+              <option value="cricket">Cricket (Living Organism — Page 4 Extension)</option>
+              <option value="mealworm">Mealworm (Living Organism — Page 4 Extension)</option>
+            </select>
+          </div>
+
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs border-collapse border border-slate-300 mono">
+              <thead>
+                <tr class="bg-slate-800 text-white font-sans">
+                  <th class="border border-slate-600 py-2 px-2 text-center">Time (min)</th>
+                  <th class="border border-slate-600 py-2 px-2 text-center">Beads Reading (mL)</th>
+                  <th class="border border-slate-600 py-2 px-2 text-center bg-amber-900">Warm (25°C) Pipet Reading (mL)</th>
+                  <th class="border border-slate-600 py-2 px-2 text-center bg-sky-900">Cold (10°C) Pipet Reading (mL)</th>
+                </tr>
+              </thead>
+              <tbody id="extOrganismTableBody"></tbody>
+            </table>
+          </div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            <div>
+              <label for="extWarmRateInput" class="block text-xs font-bold text-slate-700 mb-1">Your Calculated Warm (25°C) Rate (mL O₂/min):</label>
+              <input type="text" id="extWarmRateInput" placeholder="Show work / rate..." class="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs mono bg-white" />
+            </div>
+            <div>
+              <label for="extColdRateInput" class="block text-xs font-bold text-slate-700 mb-1">Your Calculated Cold (10°C) Rate (mL O₂/min):</label>
+              <input type="text" id="extColdRateInput" placeholder="Show work / rate..." class="w-full border border-slate-300 rounded-lg px-2.5 py-1.5 text-xs mono bg-white" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Right Card: Post-Lab Question 8 — Student Draws Predicted Curve from 45°C through 70°C -->
+        <div class="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm space-y-4">
+          <div class="border-b border-slate-100 pb-3">
+            <span class="text-xs font-bold uppercase tracking-wider text-amber-600">Post-Lab Question 8 Graph</span>
+            <h3 class="text-base font-bold text-slate-900">Oxygen Consumption by Germinating Peas (0°C to 70°C)</h3>
+            <p class="text-xs text-slate-500">Below is the graph of possible data obtained for oxygen consumption by germinating peas up to 45°C. Assuming that peas begin to dehydrate at a temperature of 45°C, enter your own predicted values for 50°C, 60°C, and 70°C to draw your predicted curve on the graph.</p>
+          </div>
+
+          <div class="relative h-56 w-full">
+            <canvas id="q8TempCurveChart"></canvas>
+          </div>
+
+          <div class="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2">
+            <div class="text-xs font-bold text-slate-800">Plot Your Predicted O₂ Consumption (mL) for 50°C–70°C:</div>
+            <div class="grid grid-cols-3 gap-2">
+              <div>
+                <label for="q8Pred50" class="block text-[11px] font-semibold text-slate-600 mb-0.5">At 50°C (mL):</label>
+                <input type="number" step="0.05" min="0" max="1.5" id="q8Pred50" placeholder="mL O₂" class="w-full border border-slate-300 rounded px-2 py-1 text-xs mono bg-white" />
+              </div>
+              <div>
+                <label for="q8Pred60" class="block text-[11px] font-semibold text-slate-600 mb-0.5">At 60°C (mL):</label>
+                <input type="number" step="0.05" min="0" max="1.5" id="q8Pred60" placeholder="mL O₂" class="w-full border border-slate-300 rounded px-2 py-1 text-xs mono bg-white" />
+              </div>
+              <div>
+                <label for="q8Pred70" class="block text-[11px] font-semibold text-slate-600 mb-0.5">At 70°C (mL):</label>
+                <input type="number" step="0.05" min="0" max="1.5" id="q8Pred70" placeholder="mL O₂" class="w-full border border-slate-300 rounded px-2 py-1 text-xs mono bg-white" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Post-Lab Questions 1–8 Interactive Student Notebook (No Study Hints / No Spoilers) -->
+      <div class="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm space-y-5">
+        <div class="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-4">
+          <div>
+            <h3 class="text-lg font-bold text-slate-900">Post-Lab Questions (Questions 1–8 from Handout)</h3>
+            <p class="text-xs text-slate-500">Type your responses below. Your work is saved automatically in your browser and included when you Print / Save as PDF.</p>
+          </div>
+          <div class="flex items-center gap-2 no-print">
+            <button type="button" id="btnClearNotebook" class="px-3 py-1.5 rounded-lg bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold transition">
+              Clear Answers
+            </button>
+          </div>
+        </div>
+
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div class="space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <label for="ansQ1" class="block text-xs font-bold text-slate-900">
+              1. Identify the hypotheses being tested in this activity. Indicate the variable factor(s), the control(s), and the purpose of each control.
+            </label>
+            <textarea id="ansQ1" rows="4" placeholder="Write your response here..." class="w-full rounded-lg border border-slate-300 p-2.5 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white"></textarea>
+          </div>
+
+          <div class="space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <label for="ansQ2" class="block text-xs font-bold text-slate-900">
+              2. In this lab exercise, what is the purpose of: (a) Beads, (b) KOH, and (c) Making sure the respirometer is completely sealed?
+            </label>
+            <textarea id="ansQ2" rows="4" placeholder="(a) Beads:&#10;(b) KOH:&#10;(c) Making sure the respirometer is completely sealed:" class="w-full rounded-lg border border-slate-300 p-2.5 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white"></textarea>
+          </div>
+
+          <div class="space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <label for="ansQ3" class="block text-xs font-bold text-slate-900">
+              3. Explain why the water moved into the respirometers' pipets.
+            </label>
+            <textarea id="ansQ3" rows="4" placeholder="Write your response here..." class="w-full rounded-lg border border-slate-300 p-2.5 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white"></textarea>
+          </div>
+
+          <div class="space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <label for="ansQ4" class="block text-xs font-bold text-slate-900">
+              4. Describe and explain the relationship between the amount of O₂ consumed and time.
+            </label>
+            <textarea id="ansQ4" rows="4" placeholder="Write your response here..." class="w-full rounded-lg border border-slate-300 p-2.5 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white"></textarea>
+          </div>
+
+          <div class="space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <label for="ansQ6" class="block text-xs font-bold text-slate-900">
+              6. Explain the effect of germination (versus nongermination) on pea seed respiration.
+            </label>
+            <textarea id="ansQ6" rows="4" placeholder="Write your response here..." class="w-full rounded-lg border border-slate-300 p-2.5 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white"></textarea>
+          </div>
+
+          <div class="space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <label for="ansQ7" class="block text-xs font-bold text-slate-900">
+              7. If you used the same experimental design to compare the rates of respiration of a 25g reptile and a 25g mammal at 25°C and 10°C, what results would you expect? Be sure to fully explain your reasoning. (It may be helpful to think of a specific reptile/mammal and compare them.)
+            </label>
+            <textarea id="ansQ7" rows="4" placeholder="Write your response here..." class="w-full rounded-lg border border-slate-300 p-2.5 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white"></textarea>
+          </div>
+
+          <div class="md:col-span-2 space-y-2 bg-slate-50 p-4 rounded-xl border border-slate-200">
+            <label for="ansQ8" class="block text-xs font-bold text-slate-900">
+              8. Assuming that peas begin to dehydrate at a temperature of 45°C, draw in predicted results of respiration through 70°C (using the graph above) and explain your results.
+            </label>
+            <textarea id="ansQ8" rows="3" placeholder="Explain your predicted results of respiration through 70°C here..." class="w-full rounded-lg border border-slate-300 p-2.5 text-xs focus:ring-2 focus:ring-emerald-500 focus:outline-none bg-white"></textarea>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // =========================================================================
+    // RAW EXPERIMENTAL PIPETTE READINGS ENGINE (NO ANSWERS EXPOSED TO STUDENTS)
+    // =========================================================================
+    const GROUP_PRESETS = {
+      1: { name: "Group 1 (Trial A)", roomTemp: 25.0, coldTemp: 10.0, peaVol: 6.2, dryPeaOnlyVol: 2.8, initRead: 0.90, germRoomRate: 0.029, dryRoomRate: 0.002, germColdRate: 0.012, dryColdRate: 0.0005, beadDriftRoom: [0.00, 0.01, 0.01, 0.02, 0.02], beadDriftCold: [0.00, 0.01, 0.02, 0.02, 0.03] },
+      2: { name: "Group 2 (Trial B)", roomTemp: 24.5, coldTemp: 10.0, peaVol: 6.0, dryPeaOnlyVol: 2.7, initRead: 0.88, germRoomRate: 0.027, dryRoomRate: 0.002, germColdRate: 0.011, dryColdRate: 0.0005, beadDriftRoom: [0.00, 0.01, 0.02, 0.02, 0.02], beadDriftCold: [0.00, 0.01, 0.01, 0.02, 0.02] },
+      3: { name: "Group 3 (Trial C)", roomTemp: 25.2, coldTemp: 9.8,  peaVol: 6.5, dryPeaOnlyVol: 3.0, initRead: 0.92, germRoomRate: 0.031, dryRoomRate: 0.0025, germColdRate: 0.013, dryColdRate: 0.001,  beadDriftRoom: [0.00, 0.00, 0.01, 0.01, 0.02], beadDriftCold: [0.00, 0.01, 0.02, 0.03, 0.03] },
+      4: { name: "Group 4 (Trial D)", roomTemp: 24.8, coldTemp: 10.2, peaVol: 5.8, dryPeaOnlyVol: 2.6, initRead: 0.89, germRoomRate: 0.028, dryRoomRate: 0.0015, germColdRate: 0.012, dryColdRate: 0.0005, beadDriftRoom: [0.00, 0.01, 0.01, 0.01, 0.02], beadDriftCold: [0.00, 0.00, 0.01, 0.02, 0.02] },
+      5: { name: "Group 5 (Trial E)", roomTemp: 25.5, coldTemp: 10.0, peaVol: 6.4, dryPeaOnlyVol: 2.9, initRead: 0.91, germRoomRate: 0.032, dryRoomRate: 0.002, germColdRate: 0.013, dryColdRate: 0.0005, beadDriftRoom: [0.00, 0.01, 0.02, 0.02, 0.03], beadDriftCold: [0.00, 0.01, 0.01, 0.02, 0.02] },
+      6: { name: "Group 6 (Trial F)", roomTemp: 24.2, coldTemp: 9.5,  peaVol: 6.1, dryPeaOnlyVol: 2.8, initRead: 0.87, germRoomRate: 0.026, dryRoomRate: 0.002, germColdRate: 0.010, dryColdRate: 0.0005, beadDriftRoom: [0.00, 0.00, 0.01, 0.02, 0.02], beadDriftCold: [0.00, 0.01, 0.02, 0.02, 0.03] },
+      7: { name: "Group 7 (Trial G)", roomTemp: 25.0, coldTemp: 10.5, peaVol: 6.3, dryPeaOnlyVol: 2.9, initRead: 0.90, germRoomRate: 0.030, dryRoomRate: 0.002, germColdRate: 0.014, dryColdRate: 0.001,  beadDriftRoom: [0.00, 0.01, 0.01, 0.02, 0.02], beadDriftCold: [0.00, 0.01, 0.01, 0.02, 0.02] },
+      8: { name: "Group 8 (Trial H)", roomTemp: 24.6, coldTemp: 10.0, peaVol: 5.9, dryPeaOnlyVol: 2.7, initRead: 0.88, germRoomRate: 0.0275, dryRoomRate: 0.0015, germColdRate: 0.0115, dryColdRate: 0.0005, beadDriftRoom: [0.00, 0.01, 0.01, 0.02, 0.02], beadDriftCold: [0.00, 0.01, 0.02, 0.02, 0.03] }
+    };
+
+    const TIME_POINTS = [0, 5, 10, 15, 20];
+
+    const state = {
+      currentGroupId: 1,
+      dataset: null,
+      cyl1Done: false,
+      cyl2DryAdded: false,
+      cyl2BeadsAdded: false,
+      cyl3Done: false,
+      asmStep: 0,
+      equilibrated: false,
+      submerged: false,
+      currentTimeIndex: 0
+    };
+
+    let mainChartInstance = null;
+    let q8ChartInstance = null;
+    let activeInterval = null;
+
+    function showToast(message, icon = "✅") {
+      const banner = document.getElementById("toastBanner");
+      const iconEl = document.getElementById("toastIcon");
+      const textEl = document.getElementById("toastText");
+      iconEl.textContent = icon;
+      textEl.textContent = message;
+      banner.classList.remove("hidden");
+      clearTimeout(banner._hideTimer);
+      banner._hideTimer = setTimeout(() => {
+        banner.classList.add("hidden");
+      }, 3600);
+    }
+
+    // Generates only the raw pipette readings (mL) for the 6 respirometers
+    function generateDatasetFromPreset(preset) {
+      const round2 = (v) => Math.round(v * 100) / 100;
+      const roomRows = [];
+      const coldRows = [];
+
+      TIME_POINTS.forEach((t, idx) => {
+        const beadDiffR = preset.beadDriftRoom[idx];
+        const beadReadR = round2(preset.initRead - beadDiffR);
+        const germCorrR = round2(preset.germRoomRate * t);
+        const germDiffR = round2(germCorrR + beadDiffR);
+        const germReadR = round2(preset.initRead - germDiffR);
+        const dryCorrR = round2(preset.dryRoomRate * t);
+        const dryDiffR = round2(dryCorrR + beadDiffR);
+        const dryReadR = round2(preset.initRead - dryDiffR);
+
+        roomRows.push({
+          time: t,
+          beadRead: beadReadR,
+          germRead: germReadR,
+          dryRead: dryReadR
+        });
+
+        const beadDiffC = preset.beadDriftCold[idx];
+        const beadReadC = round2(preset.initRead - beadDiffC);
+        const germCorrC = round2(preset.germColdRate * t);
+        const germDiffC = round2(germCorrC + beadDiffC);
+        const germReadC = round2(preset.initRead - germDiffC);
+        const dryCorrC = round2(preset.dryColdRate * t);
+        const dryDiffC = round2(dryCorrC + beadDiffC);
+        const dryReadC = round2(preset.initRead - dryDiffC);
+
+        coldRows.push({
+          time: t,
+          beadRead: beadReadC,
+          germRead: germReadC,
+          dryRead: dryReadC
+        });
+      });
+
+      return { ...preset, roomRows, coldRows };
+    }
+
+    function loadGroupDataset(groupId) {
+      state.currentGroupId = groupId;
+      const preset = GROUP_PRESETS[groupId] || GROUP_PRESETS[1];
+      state.dataset = generateDatasetFromPreset(preset);
+
+      document.getElementById("roomBathTempBadge").textContent = `🌡️ ${state.dataset.roomTemp.toFixed(1)} °C`;
+      document.getElementById("coldBathTempBadge").textContent = `❄️ ${state.dataset.coldTemp.toFixed(1)} °C`;
+      document.getElementById("table2DatasetTag").textContent = `${state.dataset.name} (${state.dataset.roomTemp.toFixed(1)}°C & ${state.dataset.coldTemp.toFixed(1)}°C)`;
+
+      updateDay1UI();
+      updateDay2UI();
+      renderTable2();
+      renderRateTable();
+      renderBlankOrStudentMainChart(false);
+      renderExtensionSection();
+    }
+
+    function switchTab(tabId) {
+      document.querySelectorAll(".tab-panel").forEach((panel) => {
+        panel.classList.toggle("hidden", panel.id !== tabId);
+      });
+      document.querySelectorAll(".nav-tab-btn").forEach((btn) => {
+        const active = btn.getAttribute("data-tab") === tabId;
+        btn.className = active
+          ? "nav-tab-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition bg-emerald-600 text-white shadow-sm"
+          : "nav-tab-btn px-3.5 py-2 rounded-lg text-xs sm:text-sm font-semibold whitespace-nowrap transition text-slate-300 hover:text-white hover:bg-slate-700/60";
+      });
+
+      if (tabId === "tab-data") {
+        if (!mainChartInstance) renderBlankOrStudentMainChart(false);
+      } else if (tabId === "tab-extension") {
+        renderExtensionSection();
+      }
+    }
+
+    // =========================================================================
+    // DAY 1: GRADUATED CYLINDER & VIAL ASSEMBLY (NO AUTO-CALCULATED DISPLACEMENT)
+    // =========================================================================
+    function setCylinderWaterLevel(cylNum, volumeML) {
+      const deltaML = volumeML - 50.0;
+      const shiftPx = (deltaML / 10.0) * 17.5;
+      const newY = 95 - shiftPx;
+      const newH = 90 + shiftPx;
+      const waterEl = document.getElementById(`cyl${cylNum}Water`);
+      const menEl = document.getElementById(`cyl${cylNum}Meniscus`);
+      if (waterEl && menEl) {
+        waterEl.setAttribute("y", newY.toFixed(1));
+        waterEl.setAttribute("height", newH.toFixed(1));
+        menEl.setAttribute("d", `M40,${newY.toFixed(1)} Q60,${(newY + 4).toFixed(1)} 80,${newY.toFixed(1)}`);
+      }
+    }
+
+    function updateDay1UI() {
+      const d = state.dataset;
+      const finalVol = (50.0 + d.peaVol).toFixed(1);
+      const dryOnlyFinal = (50.0 + d.dryPeaOnlyVol).toFixed(1);
+
+      if (state.cyl1Done) {
+        setCylinderWaterLevel(1, 50.0 + d.peaVol);
+        document.getElementById("cyl1Peas").classList.remove("hidden");
+        document.getElementById("cyl1FinalText").textContent = `${finalVol} mL`;
+        document.getElementById("t1Final1").textContent = finalVol;
+        document.getElementById("btnAddBeadsOnly").disabled = false;
+      } else {
+        setCylinderWaterLevel(1, 50.0);
+        document.getElementById("cyl1Peas").classList.add("hidden");
+        document.getElementById("cyl1FinalText").textContent = "50.0 mL";
+        document.getElementById("t1Final1").textContent = "--";
+        document.getElementById("btnAddBeadsOnly").disabled = true;
+      }
+
+      if (state.cyl2BeadsAdded) {
+        setCylinderWaterLevel(2, 50.0 + d.peaVol);
+        document.getElementById("cyl2DryPeas").classList.remove("hidden");
+        document.getElementById("cyl2Beads").classList.remove("hidden");
+        document.getElementById("cyl2FinalText").textContent = `${finalVol} mL`;
+        document.getElementById("t1Final2").textContent = finalVol;
+        document.getElementById("btnAddBeadsToDry").disabled = true;
+      } else if (state.cyl2DryAdded) {
+        setCylinderWaterLevel(2, 50.0 + d.dryPeaOnlyVol);
+        document.getElementById("cyl2DryPeas").classList.remove("hidden");
+        document.getElementById("cyl2Beads").classList.add("hidden");
+        document.getElementById("cyl2FinalText").textContent = `${dryOnlyFinal} mL`;
+        document.getElementById("t1Final2").textContent = dryOnlyFinal;
+        document.getElementById("btnAddBeadsToDry").disabled = !state.cyl1Done;
+      } else {
+        setCylinderWaterLevel(2, 50.0);
+        document.getElementById("cyl2DryPeas").classList.add("hidden");
+        document.getElementById("cyl2Beads").classList.add("hidden");
+        document.getElementById("cyl2FinalText").textContent = "50.0 mL";
+        document.getElementById("t1Final2").textContent = "--";
+        document.getElementById("btnAddBeadsToDry").disabled = true;
+      }
+
+      if (state.cyl3Done) {
+        setCylinderWaterLevel(3, 50.0 + d.peaVol);
+        document.getElementById("cyl3Beads").classList.remove("hidden");
+        document.getElementById("cyl3FinalText").textContent = `${finalVol} mL`;
+        document.getElementById("t1Final3").textContent = finalVol;
+      } else {
+        setCylinderWaterLevel(3, 50.0);
+        document.getElementById("cyl3Beads").classList.add("hidden");
+        document.getElementById("cyl3FinalText").textContent = "50.0 mL";
+        document.getElementById("t1Final3").textContent = "--";
+      }
+
+      const allCylDone = state.cyl1Done && state.cyl2BeadsAdded && state.cyl3Done;
+
+      document.getElementById("assemblyStepCounter").textContent = `${state.asmStep} / 5 Steps`;
+      for (let v = 1; v <= 3; v++) {
+        document.getElementById(`vialLayerCotton${v}`).classList.toggle("opacity-20", state.asmStep < 1);
+        document.getElementById(`vialLayerKOH${v}`).classList.toggle("hidden", state.asmStep < 2);
+        document.getElementById(`vialLayerDryCotton${v}`).classList.toggle("opacity-20", state.asmStep < 3);
+        document.getElementById(`vialLayerContents${v}`).classList.toggle("opacity-20", state.asmStep < 4);
+        document.getElementById(`vialLayerStopper${v}`).classList.toggle("opacity-20", state.asmStep < 5);
+      }
+
+      for (let s = 1; s <= 5; s++) {
+        const btn = document.getElementById(`btnAsmStep${s}`);
+        const badge = document.getElementById(`badgeAsm${s}`);
+        const done = state.asmStep >= s;
+        if (done) {
+          badge.textContent = "✓ Done";
+          badge.className = "text-emerald-600 font-bold font-mono";
+        } else {
+          badge.textContent = "Pending";
+          badge.className = "text-slate-400 font-mono";
+        }
+        if (s > 1) {
+          btn.disabled = state.asmStep < s - 1;
+        }
+      }
+
+      const readyEl = document.getElementById("day1ReadyStatus");
+      if (allCylDone && state.asmStep === 5) {
+        readyEl.className = "text-xs font-bold text-emerald-700";
+        readyEl.textContent = "✅ All 6 Respirometers Assembled, Sealed & Leak-Checked!";
+      } else {
+        readyEl.className = "text-xs font-medium text-slate-500";
+        readyEl.textContent = "Complete steps above or click Quick-Complete";
+      }
+    }
+
+    // =========================================================================
+    // DAY 2: ZOOMED PIPETTE MENISCUS READER (RAW READINGS ONLY — NO DIFF*)
+    // =========================================================================
+    function renderPipetteMagnifiers() {
+      const container = document.getElementById("pipetteMagnifierList");
+      const idx = state.currentTimeIndex;
+      const t = TIME_POINTS[idx];
+      const rRow = state.dataset.roomRows[idx];
+      const cRow = state.dataset.coldRows[idx];
+
+      const vials = [
+        { id: 1, title: "Vial 1: Germinating Peas", bath: `Room (${state.dataset.roomTemp.toFixed(1)}°C)`, badgeClass: "bg-emerald-100 text-emerald-800", reading: rRow.germRead },
+        { id: 2, title: "Vial 2: Dry Peas + Beads", bath: `Room (${state.dataset.roomTemp.toFixed(1)}°C)`, badgeClass: "bg-amber-100 text-amber-800", reading: rRow.dryRead },
+        { id: 3, title: "Vial 3: Glass Beads Alone", bath: `Room (${state.dataset.roomTemp.toFixed(1)}°C)`, badgeClass: "bg-slate-200 text-slate-800", reading: rRow.beadRead },
+        { id: 4, title: "Vial 4: Germinating Peas", bath: `Cold (${state.dataset.coldTemp.toFixed(1)}°C)`, badgeClass: "bg-sky-100 text-sky-800", reading: cRow.germRead },
+        { id: 5, title: "Vial 5: Dry Peas + Beads", bath: `Cold (${state.dataset.coldTemp.toFixed(1)}°C)`, badgeClass: "bg-indigo-100 text-indigo-800", reading: cRow.dryRead },
+        { id: 6, title: "Vial 6: Glass Beads Alone", bath: `Cold (${state.dataset.coldTemp.toFixed(1)}°C)`, badgeClass: "bg-slate-200 text-slate-800", reading: cRow.beadRead }
+      ];
+
+      vials.forEach((v) => {
+        const meniscusX = 115 + (v.reading / 1.0) * 250;
+        const waterWidth = Math.max(4, 365 - meniscusX);
+        const waterRect = document.getElementById(`bathPipetWater${v.id}`);
+        if (waterRect) {
+          waterRect.setAttribute("x", meniscusX.toFixed(1));
+          waterRect.setAttribute("width", waterWidth.toFixed(1));
+        }
+      });
+
+      container.innerHTML = vials.map((v) => {
+        const pct = Math.min(96, Math.max(4, v.reading * 100));
+        return `
+          <div class="p-2.5 rounded-xl border border-slate-200 bg-slate-50 space-y-1.5">
+            <div class="flex flex-wrap items-center justify-between gap-1 text-xs">
+              <div class="flex items-center gap-2">
+                <span class="font-bold text-slate-900">${v.title}</span>
+                <span class="px-2 py-0.5 rounded text-[11px] font-semibold ${v.badgeClass}">${v.bath}</span>
+              </div>
+              <div class="mono text-xs">
+                <span>Meniscus Reading (${t} min): <strong class="text-sky-700">${v.reading.toFixed(2)} mL</strong></span>
+              </div>
+            </div>
+
+            <div class="relative w-full h-9 bg-white rounded-lg border border-slate-300 overflow-hidden flex items-center">
+              <div class="h-full bg-amber-50/50 border-r-2 border-sky-600 transition-all duration-500 flex items-center justify-start pl-2 text-[10px] font-semibold text-slate-400" style="width: ${pct}%;">
+                ← Chamber Air
+              </div>
+              <div class="h-full bg-sky-400/35 flex-1 flex items-center justify-end pr-2 text-[10px] font-semibold text-sky-800">
+                Bath H₂O →
+              </div>
+              <svg viewBox="0 0 400 36" class="absolute inset-0 w-full h-full pointer-events-none">
+                ${[0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9].map((mark) => {
+                  const x = mark * 400;
+                  return `
+                    <line x1="${x}" y1="0" x2="${x}" y2="11" stroke="#334155" stroke-width="1.2" />
+                    <text x="${x}" y="23" text-anchor="middle" font-size="9" font-family="monospace" font-weight="bold" fill="#1e293b">${mark.toFixed(1)}</text>
+                  `;
+                }).join("")}
+                ${Array.from({ length: 50 }, (_, i) => {
+                  const x = (i * 0.02) * 400;
+                  return `<line x1="${x}" y1="0" x2="${x}" y2="5" stroke="#64748b" stroke-width="0.7" />`;
+                }).join("")}
+                <circle cx="${v.reading * 400}" cy="30" r="3.5" fill="#0284c7" />
+              </svg>
+            </div>
+          </div>
+        `;
+      }).join("");
+    }
+
+    function updateDay2UI() {
+      const t = TIME_POINTS[state.currentTimeIndex];
+      document.getElementById("timeSliceSelector").value = String(t);
+      document.getElementById("labTimerDisplay").textContent = `${String(t).padStart(2, "0")}:00 min`;
+
+      const roomTape = document.getElementById("roomTapeStrip");
+      const coldTape = document.getElementById("coldTapeStrip");
+
+      if (!state.equilibrated && !state.submerged) {
+        document.getElementById("labPhaseLabel").textContent = "1. Ready for 7-Min Equilibration";
+        document.getElementById("btnSubmerge").disabled = true;
+        document.getElementById("btnStep5Min").disabled = true;
+        if (roomTape) roomTape.setAttribute("fill-opacity", "0.85");
+        if (coldTape) coldTape.setAttribute("fill-opacity", "0.85");
+      } else if (state.equilibrated && !state.submerged) {
+        document.getElementById("labPhaseLabel").textContent = "2. Equilibrated (7 min) — Ready to Submerge";
+        document.getElementById("btnSubmerge").disabled = false;
+        document.getElementById("btnStep5Min").disabled = true;
+      } else {
+        document.getElementById("labPhaseLabel").textContent = t < 20
+          ? `3. Submerged — Recording Time Course (t = ${t} min)`
+          : "✅ 20-Min Time Course Complete!";
+        document.getElementById("btnSubmerge").disabled = true;
+        document.getElementById("btnStep5Min").disabled = t >= 20;
+        if (roomTape) roomTape.setAttribute("fill-opacity", "0.25");
+        if (coldTape) coldTape.setAttribute("fill-opacity", "0.25");
+      }
+
+      renderPipetteMagnifiers();
+    }
+
+    // =========================================================================
+    // TAB 4: TABLE 2 (STUDENT INPUTS ONLY — NO AUTO-CALCULATION)
+    // =========================================================================
+    function renderTable2() {
+      const tbody = document.getElementById("table2Body");
+      const d = state.dataset;
+
+      const buildSectionRows = (rows, tempLabel, tempDegrees, sectionKey) => {
+        return rows.map((r, idx) => {
+          const isT0 = r.time === 0;
+          const tempCell = idx === 0
+            ? `<td rowspan="5" class="border border-slate-300 py-2 px-2 text-center font-sans font-bold bg-slate-50 text-slate-900">${tempLabel}<br><span class="mono text-xs text-emerald-700">${tempDegrees.toFixed(1)}°C</span></td>`
+            : "";
+
+          if (isT0) {
+            return `
+              <tr class="bg-slate-100/90 font-semibold">
+                ${tempCell}
+                <td class="border border-slate-300 py-2 px-2 text-center font-bold">0</td>
+                <td class="border border-slate-300 py-2 px-2 text-center text-sky-800">${r.beadRead.toFixed(2)}</td>
+                <td class="border border-slate-300 py-2 px-2 text-center text-slate-400">—</td>
+                <td class="border border-slate-300 py-2 px-2 text-center text-sky-800">${r.germRead.toFixed(2)}</td>
+                <td class="border border-slate-300 py-2 px-2 text-center text-slate-400">—</td>
+                <td class="border border-slate-300 py-2 px-2 text-center bg-emerald-50/40 text-slate-400">—</td>
+                <td class="border border-slate-300 py-2 px-2 text-center text-sky-800">${r.dryRead.toFixed(2)}</td>
+                <td class="border border-slate-300 py-2 px-2 text-center text-slate-400">—</td>
+                <td class="border border-slate-300 py-2 px-2 text-center bg-amber-50/40 text-slate-400">—</td>
+              </tr>
+            `;
+          }
+
+          return `
+            <tr class="hover:bg-slate-50">
+              ${tempCell}
+              <td class="border border-slate-300 py-1.5 px-2 text-center font-bold">${r.time}</td>
+              <td class="border border-slate-300 py-1.5 px-2 text-center text-sky-800">${r.beadRead.toFixed(2)}</td>
+              <td class="border border-slate-300 py-1.5 px-1 text-center">
+                <input type="number" step="0.01" id="t2_${sectionKey}_${r.time}_beadDiff" placeholder="Diff*" class="student-t2-cell w-16 text-center border border-slate-300 rounded px-1 py-0.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500" />
+              </td>
+              <td class="border border-slate-300 py-1.5 px-2 text-center text-sky-800">${r.germRead.toFixed(2)}</td>
+              <td class="border border-slate-300 py-1.5 px-1 text-center">
+                <input type="number" step="0.01" id="t2_${sectionKey}_${r.time}_germDiff" placeholder="Diff*" class="student-t2-cell w-16 text-center border border-slate-300 rounded px-1 py-0.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500" />
+              </td>
+              <td class="border border-slate-300 py-1.5 px-1 text-center bg-emerald-50/40">
+                <input type="number" step="0.01" id="t2_${sectionKey}_${r.time}_germCorr" placeholder="Corr ∆" class="student-t2-cell w-16 text-center border border-emerald-300 rounded px-1 py-0.5 text-xs font-bold bg-white focus:outline-none focus:ring-1 focus:ring-emerald-600" />
+              </td>
+              <td class="border border-slate-300 py-1.5 px-2 text-center text-sky-800">${r.dryRead.toFixed(2)}</td>
+              <td class="border border-slate-300 py-1.5 px-1 text-center">
+                <input type="number" step="0.01" id="t2_${sectionKey}_${r.time}_dryDiff" placeholder="Diff*" class="student-t2-cell w-16 text-center border border-slate-300 rounded px-1 py-0.5 text-xs bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500" />
+              </td>
+              <td class="border border-slate-300 py-1.5 px-1 text-center bg-amber-50/40">
+                <input type="number" step="0.01" id="t2_${sectionKey}_${r.time}_dryCorr" placeholder="Corr ∆" class="student-t2-cell w-16 text-center border border-amber-300 rounded px-1 py-0.5 text-xs font-bold bg-white focus:outline-none focus:ring-1 focus:ring-amber-600" />
+              </td>
+            </tr>
+          `;
+        }).join("");
+      };
+
+      tbody.innerHTML =
+        buildSectionRows(d.roomRows, "Room", d.roomTemp, "room") +
+        buildSectionRows(d.coldRows, "Cold", d.coldTemp, "cold");
+    }
+
+    function renderRateTable() {
+      const d = state.dataset;
+      const rows = [
+        { id: "germ10", label: `Germinating Seeds / 10°C` },
+        { id: "germRoom", label: `Germinating Seeds / Room Temp (${d.roomTemp.toFixed(1)}°C)` },
+        { id: "dry10", label: `Nongerminating Seeds / 10°C` },
+        { id: "dryRoom", label: `Nongerminating Seeds / Room Temp (${d.roomTemp.toFixed(1)}°C)` }
+      ];
+
+      const tbody = document.getElementById("rateTableBody");
+      tbody.innerHTML = rows.map((r) => `
+        <tr>
+          <td class="border border-slate-300 py-2 px-2.5 font-semibold text-slate-900">${r.label}</td>
+          <td class="border border-slate-300 py-2 px-2">
+            <input type="text" id="rateWork_${r.id}" placeholder="Show your calculation work..." class="w-full border border-slate-300 rounded px-2 py-1 text-xs mono bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500" />
+          </td>
+          <td class="border border-slate-300 py-2 px-2 text-center">
+            <input type="text" id="rateVal_${r.id}" placeholder="mL O₂/min" class="w-24 text-center border border-slate-300 rounded px-1.5 py-1 text-xs mono font-bold bg-white focus:outline-none focus:ring-1 focus:ring-emerald-500" />
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    // Plots ONLY what the student has manually typed into Table 2 (or renders a blank grid if plotStudentEntries === false)
+    function renderBlankOrStudentMainChart(plotStudentEntries) {
+      const ctx = document.getElementById("respirationChart");
+      if (!ctx) return;
+
+      const d = state.dataset;
+      const xs = TIME_POINTS;
+
+      const readStudentSeries = (sectionKey, colKey) => {
+        if (!plotStudentEntries) return [null, null, null, null, null];
+        return xs.map((t) => {
+          if (t === 0) return 0;
+          const el = document.getElementById(`t2_${sectionKey}_${t}_${colKey}`);
+          if (!el || el.value.trim() === "") return null;
+          const val = parseFloat(el.value);
+          return isNaN(val) ? null : val;
+        });
+      };
+
+      const yGermRoom = readStudentSeries("room", "germCorr");
+      const yGermCold = readStudentSeries("cold", "germCorr");
+      const yDryRoom = readStudentSeries("room", "dryCorr");
+      const yDryCold = readStudentSeries("cold", "dryCorr");
+
+      const datasets = [
+        {
+          label: `Germinating Seeds (${d.roomTemp.toFixed(1)}°C Room)`,
+          data: yGermRoom,
+          borderColor: "#16a34a",
+          backgroundColor: "#16a34a",
+          pointRadius: 5,
+          showLine: true,
+          spanGaps: true
+        },
+        {
+          label: `Germinating Seeds (${d.coldTemp.toFixed(1)}°C Cold)`,
+          data: yGermCold,
+          borderColor: "#0284c7",
+          backgroundColor: "#0284c7",
+          pointRadius: 5,
+          showLine: true,
+          spanGaps: true
+        },
+        {
+          label: `Nongerminating Seeds (${d.roomTemp.toFixed(1)}°C Room)`,
+          data: yDryRoom,
+          borderColor: "#d97706",
+          backgroundColor: "#d97706",
+          pointRadius: 5,
+          showLine: true,
+          spanGaps: true
+        },
+        {
+          label: `Nongerminating Seeds (${d.coldTemp.toFixed(1)}°C Cold)`,
+          data: yDryCold,
+          borderColor: "#64748b",
+          backgroundColor: "#64748b",
+          pointRadius: 5,
+          showLine: true,
+          spanGaps: true
+        }
+      ];
+
+      if (mainChartInstance) {
+        mainChartInstance.destroy();
+      }
+
+      mainChartInstance = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels: xs.map((t) => `${t} min`),
+          datasets
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: {
+              position: "bottom",
+              labels: { boxWidth: 12, font: { size: 11 } }
+            }
+          },
+          scales: {
+            x: {
+              title: { display: true, text: "Time (minutes)", font: { weight: "bold", size: 12 } }
+            },
+            y: {
+              beginAtZero: true,
+              suggestedMax: 0.7,
+              title: { display: true, text: "Corrected O₂ Consumed ∆ (mL)", font: { weight: "bold", size: 12 } }
+            }
+          }
+        }
+      });
+    }
+
+    // =========================================================================
+    // TAB 5: EXTENSION RAW PIPETTE DATA & STUDENT-DRAWN Q8 PREDICTION GRAPH
+    // =========================================================================
+    const EXTENSION_RAW_DATA = {
+      cricket: {
+        name: "Cricket",
+        rows: [
+          { time: 0,  bead: 0.90, warm: 0.90, cold: 0.90 },
+          { time: 5,  bead: 0.89, warm: 0.67, cold: 0.81 },
+          { time: 10, bead: 0.89, warm: 0.44, cold: 0.73 },
+          { time: 15, bead: 0.88, warm: 0.21, cold: 0.64 },
+          { time: 20, bead: 0.88, warm: 0.02, cold: 0.56 }
+        ]
+      },
+      mealworm: {
+        name: "Mealworm",
+        rows: [
+          { time: 0,  bead: 0.90, warm: 0.90, cold: 0.90 },
+          { time: 5,  bead: 0.89, warm: 0.71, cold: 0.82 },
+          { time: 10, bead: 0.89, warm: 0.53, cold: 0.75 },
+          { time: 15, bead: 0.88, warm: 0.34, cold: 0.67 },
+          { time: 20, bead: 0.88, warm: 0.16, cold: 0.60 }
+        ]
+      }
+    };
+
+    function renderExtensionSection() {
+      const orgKey = document.getElementById("extOrganismSelect").value;
+      const spec = EXTENSION_RAW_DATA[orgKey] || EXTENSION_RAW_DATA.cricket;
+      const tbody = document.getElementById("extOrganismTableBody");
+
+      tbody.innerHTML = spec.rows.map((r) => `
+        <tr class="hover:bg-slate-50">
+          <td class="border border-slate-300 py-1.5 px-2 text-center font-bold">${r.time}</td>
+          <td class="border border-slate-300 py-1.5 px-2 text-center text-slate-700">${r.bead.toFixed(2)}</td>
+          <td class="border border-slate-300 py-1.5 px-2 text-center font-bold text-amber-800 bg-amber-50/40">${r.warm.toFixed(2)}</td>
+          <td class="border border-slate-300 py-1.5 px-2 text-center font-bold text-sky-800 bg-sky-50/40">${r.cold.toFixed(2)}</td>
+        </tr>
+      `).join("");
+
+      renderQ8StudentChart();
+    }
+
+    function renderQ8StudentChart() {
+      const ctxQ8 = document.getElementById("q8TempCurveChart");
+      if (!ctxQ8) return;
+      if (q8ChartInstance) q8ChartInstance.destroy();
+
+      const temps = [0, 10, 20, 30, 40, 45, 50, 60, 70];
+      const givenData = [0.02, 0.24, 0.48, 0.72, 0.95, 0.92, null, null, null];
+
+      const p50 = parseFloat(document.getElementById("q8Pred50")?.value);
+      const p60 = parseFloat(document.getElementById("q8Pred60")?.value);
+      const p70 = parseFloat(document.getElementById("q8Pred70")?.value);
+
+      const studentPred = [
+        null, null, null, null, null, 0.92,
+        isNaN(p50) ? null : p50,
+        isNaN(p60) ? null : p60,
+        isNaN(p70) ? null : p70
+      ];
+
+      q8ChartInstance = new Chart(ctxQ8, {
+        type: "line",
+        data: {
+          labels: temps.map((t) => `${t}°C`),
+          datasets: [
+            {
+              label: "Given Data (0°C–45°C)",
+              data: givenData,
+              borderColor: "#16a34a",
+              backgroundColor: "#16a34a",
+              borderWidth: 3,
+              pointRadius: 5,
+              tension: 0.25
+            },
+            {
+              label: "Your Predicted Curve (45°C–70°C)",
+              data: studentPred,
+              borderColor: "#d97706",
+              backgroundColor: "#d97706",
+              borderDash: [6, 4],
+              borderWidth: 2.5,
+              pointRadius: 5,
+              spanGaps: true,
+              tension: 0.2
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: "bottom", labels: { boxWidth: 12, font: { size: 11 } } }
+          },
+          scales: {
+            x: { title: { display: true, text: "Temperature (°C)", font: { weight: "bold", size: 11 } } },
+            y: { beginAtZero: true, suggestedMax: 1.2, title: { display: true, text: "mL of Oxygen Consumed", font: { weight: "bold", size: 11 } } }
+          }
+        }
+      });
+    }
+
+    // =========================================================================
+    // CSV EXPORT (EXPORTS RAW READINGS + STUDENT'S OWN ENTERED VALUES ONLY)
+    // =========================================================================
+    function exportLabDataCSV() {
+      const d = state.dataset;
+      const v1 = document.getElementById("t1VolInput1")?.value || "";
+      const v2 = document.getElementById("t1VolInput2")?.value || "";
+      const v3 = document.getElementById("t1VolInput3")?.value || "";
+
+      const lines = [
+        `AP Biology Cellular Respiration Lab - ${d.name}`,
+        `Room Bath Temp (C),${d.roomTemp.toFixed(1)},Cold Bath Temp (C),${d.coldTemp.toFixed(1)}`,
+        "",
+        "Table 1: Calculation of Volume in Respirometers",
+        "Measurement,Respirometer 1 & 4 (Germinating),Respirometer 2 & 5 (Dry + Beads),Respirometer 3 & 6 (Beads Only)",
+        `Initial Volume (mL),50.0,50.0,50.0`,
+        `Final Volume (mL),${(50 + d.peaVol).toFixed(1)},${(50 + d.peaVol).toFixed(1)},${(50 + d.peaVol).toFixed(1)}`,
+        `Student Calculated Volume of beads/seeds (mL),${v1},${v2},${v3}`,
+        "",
+        "Table 2: Measurement of O2 Consumption using Volumetric Methods",
+        "Temp (C),Time (min),Beads Reading (mL),Beads Diff* (Student),Germinating Reading (mL),Germinating Diff* (Student),Germinating Corrected Diff (Student),Nongerminating Reading (mL),Nongerminating Diff* (Student),Nongerminating Corrected Diff (Student)"
+      ];
+
+      const appendRows = (rows, label, sectionKey) => {
+        rows.forEach((r) => {
+          const bDiff = r.time === 0 ? "0" : (document.getElementById(`t2_${sectionKey}_${r.time}_beadDiff`)?.value || "");
+          const gDiff = r.time === 0 ? "0" : (document.getElementById(`t2_${sectionKey}_${r.time}_germDiff`)?.value || "");
+          const gCorr = r.time === 0 ? "0" : (document.getElementById(`t2_${sectionKey}_${r.time}_germCorr`)?.value || "");
+          const dDiff = r.time === 0 ? "0" : (document.getElementById(`t2_${sectionKey}_${r.time}_dryDiff`)?.value || "");
+          const dCorr = r.time === 0 ? "0" : (document.getElementById(`t2_${sectionKey}_${r.time}_dryCorr`)?.value || "");
+          lines.push(`${label},${r.time},${r.beadRead.toFixed(2)},${bDiff},${r.germRead.toFixed(2)},${gDiff},${gCorr},${r.dryRead.toFixed(2)},${dDiff},${dCorr}`);
+        });
+      };
+
+      appendRows(d.roomRows, `Room (${d.roomTemp.toFixed(1)}C)`, "room");
+      appendRows(d.coldRows, `Cold (${d.coldTemp.toFixed(1)}C)`, "cold");
+
+      const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `ap_bio_cellular_respiration_group_${state.currentGroupId}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      showToast("Exported raw readings and your entered table values to CSV!", "📥");
+    }
+
+    function saveNotebookToStorage() {
+      try {
+        const answers = {};
+        ["ansQ1", "ansQ2", "ansQ3", "ansQ4", "ansQ6", "ansQ7", "ansQ8"].forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) answers[id] = el.value;
+        });
+        localStorage.setItem("apBioRespLabNotebook", JSON.stringify(answers));
+      } catch (e) {}
+    }
+
+    function loadNotebookFromStorage() {
+      try {
+        const raw = localStorage.getItem("apBioRespLabNotebook");
+        if (!raw) return;
+        const answers = JSON.parse(raw);
+        Object.keys(answers).forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) el.value = answers[id];
+        });
+      } catch (e) {}
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      loadGroupDataset(1);
+      loadNotebookFromStorage();
+
+      document.querySelectorAll(".nav-tab-btn").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          switchTab(btn.getAttribute("data-tab"));
+        });
+      });
+
+      document.getElementById("btnStartDay1FromHero").addEventListener("click", () => switchTab("tab-day1"));
+      document.getElementById("btnJumpDay2FromHero").addEventListener("click", () => switchTab("tab-day2"));
+
+      document.getElementById("groupSelect").addEventListener("change", (e) => {
+        loadGroupDataset(Number(e.target.value));
+        showToast(`Loaded raw dataset for ${state.dataset.name}`, "🔬");
+      });
+
+      document.getElementById("btnRandomizeGroup").addEventListener("click", () => {
+        const nextId = (state.currentGroupId % 8) + 1;
+        document.getElementById("groupSelect").value = String(nextId);
+        loadGroupDataset(nextId);
+        showToast(`Generated fresh dataset: ${state.dataset.name}`, "🎲");
+      });
+
+      document.getElementById("btnExportCSV").addEventListener("click", exportLabDataCSV);
+      document.getElementById("btnPrintReport").addEventListener("click", () => {
+        window.print();
+      });
+
+      // Day 1 Cylinder & Assembly Buttons
+      document.getElementById("btnAddGermPeas").addEventListener("click", () => {
+        state.cyl1Done = true;
+        updateDay1UI();
+        showToast(`Added 25 Germinating Peas. Read the Final Volume and calculate the displaced pea volume in Table 1!`, "🌱");
+      });
+
+      document.getElementById("btnAddDryPeas").addEventListener("click", () => {
+        state.cyl2DryAdded = true;
+        updateDay1UI();
+        showToast(`Added 25 Dry Peas. Now add glass beads to match the Germinating Peas Final Volume!`, "🫘");
+      });
+
+      document.getElementById("btnAddBeadsToDry").addEventListener("click", () => {
+        state.cyl2BeadsAdded = true;
+        updateDay1UI();
+        showToast(`Added glass beads to match the target Final Volume!`, "⚪");
+      });
+
+      document.getElementById("btnAddBeadsOnly").addEventListener("click", () => {
+        state.cyl3Done = true;
+        updateDay1UI();
+        showToast(`Added glass beads to match the target Final Volume!`, "⚪");
+      });
+
+      for (let s = 1; s <= 5; s++) {
+        document.getElementById(`btnAsmStep${s}`).addEventListener("click", () => {
+          state.asmStep = Math.max(state.asmStep, s);
+          updateDay1UI();
+          if (s === 5) {
+            showToast("All 6 respirometers assembled, sealed with Parafilm, and leak-checked!", "✅");
+          }
+        });
+      }
+
+      document.getElementById("btnAutoCompleteDay1").addEventListener("click", () => {
+        state.cyl1Done = true;
+        state.cyl2DryAdded = true;
+        state.cyl2BeadsAdded = true;
+        state.cyl3Done = true;
+        state.asmStep = 5;
+        updateDay1UI();
+        showToast("Day 1 setup completed! Calculate your displaced volumes in Table 1.", "⚡");
+      });
+
+      document.getElementById("btnResetDay1").addEventListener("click", () => {
+        state.cyl1Done = false;
+        state.cyl2DryAdded = false;
+        state.cyl2BeadsAdded = false;
+        state.cyl3Done = false;
+        state.asmStep = 0;
+        ["t1VolInput1", "t1VolInput2", "t1VolInput3"].forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) el.value = "";
+        });
+        updateDay1UI();
+        showToast("Day 1 station reset.", "🔄");
+      });
+
+      document.getElementById("btnProceedToDay2").addEventListener("click", () => {
+        switchTab("tab-day2");
+      });
+
+      // Day 2 Controls
+      document.getElementById("btnEquilibrate").addEventListener("click", () => {
+        state.equilibrated = true;
+        state.submerged = false;
+        state.currentTimeIndex = 0;
+        updateDay2UI();
+        showToast("7-minute equilibration complete! Respirometers are now at bath temperature.", "⏱️");
+      });
+
+      document.getElementById("btnSubmerge").addEventListener("click", () => {
+        state.submerged = true;
+        state.currentTimeIndex = 0;
+        updateDay2UI();
+        showToast("Respirometers submerged! Initial Time 0 meniscus readings are ready.", "💧");
+      });
+
+      document.getElementById("btnStep5Min").addEventListener("click", () => {
+        if (state.currentTimeIndex < 4) {
+          state.currentTimeIndex += 1;
+          updateDay2UI();
+          const t = TIME_POINTS[state.currentTimeIndex];
+          showToast(`Advanced to t = ${t} minutes! Inspect the pipette meniscus readings.`, "📏");
+        }
+      });
+
+      document.getElementById("btnAutoRunAllTime").addEventListener("click", () => {
+        if (activeInterval) clearInterval(activeInterval);
+        state.equilibrated = true;
+        state.submerged = true;
+        state.currentTimeIndex = 0;
+        updateDay2UI();
+        showToast("Running accelerated 20-minute respirometry time course...", "⏩");
+
+        activeInterval = setInterval(() => {
+          if (state.currentTimeIndex < 4) {
+            state.currentTimeIndex += 1;
+            updateDay2UI();
+          } else {
+            clearInterval(activeInterval);
+            activeInterval = null;
+            showToast("20-minute time course complete! Go to Tab 4 to perform your Table 2 calculations.", "🎉");
+          }
+        }, 650);
+      });
+
+      document.getElementById("btnResetDay2").addEventListener("click", () => {
+        if (activeInterval) clearInterval(activeInterval);
+        state.equilibrated = false;
+        state.submerged = false;
+        state.currentTimeIndex = 0;
+        updateDay2UI();
+        showToast("Day 2 water bath timer reset to Time 0.", "🔄");
+      });
+
+      document.getElementById("timeSliceSelector").addEventListener("change", (e) => {
+        const val = Number(e.target.value);
+        const idx = TIME_POINTS.indexOf(val);
+        if (idx !== -1) {
+          state.equilibrated = true;
+          state.submerged = true;
+          state.currentTimeIndex = idx;
+          updateDay2UI();
+        }
+      });
+
+      document.getElementById("btnGoToTable2").addEventListener("click", () => {
+        switchTab("tab-data");
+      });
+
+      // Tab 4 Student Plotting & Clearing Controls
+      document.getElementById("btnPlotStudentData").addEventListener("click", () => {
+        renderBlankOrStudentMainChart(true);
+        showToast("Plotted your entered Corrected diff. ∆ values on the graph!", "📈");
+      });
+
+      document.getElementById("btnClearChart").addEventListener("click", () => {
+        renderBlankOrStudentMainChart(false);
+        showToast("Cleared graph back to a blank coordinate grid.", "🧹");
+      });
+
+      document.getElementById("btnClearStudentTable2").addEventListener("click", () => {
+        document.querySelectorAll(".student-t2-cell").forEach((inp) => {
+          inp.value = "";
+        });
+        renderBlankOrStudentMainChart(false);
+        showToast("Cleared your Table 2 calculation entries.", "🔄");
+      });
+
+      // Tab 5 Extension & Student Q8 Prediction Inputs
+      document.getElementById("extOrganismSelect").addEventListener("change", renderExtensionSection);
+
+      ["q8Pred50", "q8Pred60", "q8Pred70"].forEach((id) => {
+        document.getElementById(id).addEventListener("input", renderQ8StudentChart);
+      });
+
+      document.getElementById("btnClearNotebook").addEventListener("click", () => {
+        ["ansQ1", "ansQ2", "ansQ3", "ansQ4", "ansQ6", "ansQ7", "ansQ8"].forEach((id) => {
+          const el = document.getElementById(id);
+          if (el) el.value = "";
+        });
+        saveNotebookToStorage();
+        showToast("Cleared post-lab notebook responses.", "🧹");
+      });
+
+      ["ansQ1", "ansQ2", "ansQ3", "ansQ4", "ansQ6", "ansQ7", "ansQ8"].forEach((id) => {
+        const el = document.getElementById(id);
+        if (el) el.addEventListener("input", saveNotebookToStorage);
+      });
+    });
+  </script>
+</body>
+</html>
